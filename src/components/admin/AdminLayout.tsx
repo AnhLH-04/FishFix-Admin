@@ -27,7 +27,6 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "../ui/dropdown-menu";
-import LogoFishFix from "../../assets/logoFishFix.png";
 
 const menuItems = [
   { icon: LayoutDashboard, label: "Dashboard", path: "/admin" },
@@ -85,10 +84,8 @@ export function AdminLayout() {
               to="/admin"
               className="flex items-center gap-2"
             >
-              <div className="w-10 h-10 rounded-xl flex items-center justify-center shadow-lg">
-                {/* <div className="w-10 h-10 bg-gradient-to-br from-[#007BFF] to-purple-600 rounded-xl flex items-center justify-center shadow-lg"> */}
-                {/* <Wrench className="w-6 h-6 text-white" /> */}
-                <img src={LogoFishFix} alt="FishFix Logo" className="w-6 h-6" />
+              <div className="w-10 h-10 bg-gradient-to-br from-[#007BFF] to-purple-600 rounded-xl flex items-center justify-center shadow-lg">
+                <Wrench className="w-6 h-6 text-white" />
               </div>
               <div>
                 <span className="bg-gradient-to-r from-[#007BFF] to-purple-600 bg-clip-text text-transparent">

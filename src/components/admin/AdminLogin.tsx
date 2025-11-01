@@ -6,7 +6,6 @@ import { Input } from '../ui/input';
 import { Button } from '../ui/button';
 import { Label } from '../ui/label';
 import { Checkbox } from '../ui/checkbox';
-import Logo from '../../assets/logo.png';
 
 export function AdminLogin() {
   const navigate = useNavigate();
@@ -41,10 +40,10 @@ export function AdminLogin() {
         <CardHeader className="text-center pb-8">
           {/* Logo */}
           <div className="flex justify-center mb-6">
-            {/* <div className="w-20 h-20 bg-gradient-to-br from-[#007BFF] to-purple-600 rounded-2xl flex items-center justify-center shadow-xl animate-float"> */}
-            <div className="w-20 h-20 rounded-2xl flex items-center justify-center shadow-xl animate-float">
-              {/* <Wrench className="w-10 h-10 text-white" /> */}
-              <img src={Logo} alt="FishFix Logo" className="w-10 h-10" />
+            <div className="w-20 h-20 bg-gradient-to-br from-[#007BFF] to-purple-600 rounded-2xl flex items-center justify-center shadow-xl animate-float">
+              {/* <div className="w-20 h-20 rounded-2xl flex items-center justify-center shadow-xl animate-float"> */}
+              <Wrench className="w-10 h-10 text-white" />
+              {/* <img src={Logo} alt="FishFix Logo" className="w-10 h-10" /> */}
 
             </div>
           </div>
