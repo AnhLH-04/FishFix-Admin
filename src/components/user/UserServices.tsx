@@ -1,16 +1,16 @@
-import { useNavigate } from 'react-router-dom';
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '../ui/card';
-import { Button } from '../ui/button';
-import { Input } from '../ui/input';
-import { Badge } from '../ui/badge';
-import { Search, Star, Filter } from 'lucide-react';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
-import { mainServices, detailedServicesByCategory } from './serviceData';
-import { useState } from 'react';
+import { useNavigate } from "react-router-dom";
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "../ui/card";
+import { Button } from "../ui/button";
+import { Input } from "../ui/input";
+import { Badge } from "../ui/badge";
+import { Search, Star, Filter } from "lucide-react";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../ui/select";
+import { mainServices, detailedServicesByCategory } from "./serviceData";
+import { useState } from "react";
 
 export function UserServices() {
-  const [searchTerm, setSearchTerm] = useState('');
-  const [selectedCategory, setSelectedCategory] = useState('all');
+  const [searchTerm, setSearchTerm] = useState("");
+  const [selectedCategory, setSelectedCategory] = useState("all");
   const [activeServiceCategory, setActiveServiceCategory] = useState<string | null>(null);
   const navigate = useNavigate();
 
@@ -18,7 +18,7 @@ export function UserServices() {
     const matchesSearch =
       service.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
       service.description.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesCategory = selectedCategory === 'all' || service.category === selectedCategory;
+    const matchesCategory = selectedCategory === "all" || service.category === selectedCategory;
     return matchesSearch && matchesCategory;
   });
 
@@ -76,9 +76,7 @@ export function UserServices() {
                 <div className="mx-auto bg-gradient-to-br from-blue-50 to-indigo-50 w-24 h-24 rounded-2xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform duration-300 shadow-md">
                   <div className="text-5xl">{service.icon}</div>
                 </div>
-                <CardTitle className="text-xl group-hover:text-blue-600 transition-colors">
-                  {service.name}
-                </CardTitle>
+                <CardTitle className="text-xl group-hover:text-blue-600 transition-colors">{service.name}</CardTitle>
                 <CardDescription className="text-center min-h-[48px] leading-relaxed">
                   {service.description}
                 </CardDescription>
@@ -107,7 +105,8 @@ export function UserServices() {
               <CardFooter className="flex flex-col gap-2">
                 <Button
                   className="w-full bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 shadow-md"
-                  onClick={() => (window.location.href = `/technicians?service=${service.category}`)}
+                  // onClick={() => (window.location.href = `/technicians?service=${service.category}`)}
+                  onClick={() => navigate(`/technicians`)}
                 >
                   Tìm Thợ
                 </Button>
@@ -116,7 +115,12 @@ export function UserServices() {
                     type="button"
                     variant="outline"
                     className="w-full border-dashed"
-                    onClick={() => setActiveServiceCategory(service.category)}
+                    onClick={() => {
+                      const firstDetail = detailedServicesByCategory[service.category]?.[0];
+                      if (firstDetail) {
+                        navigate(`/services/${service.category}/${firstDetail.id}`);
+                      }
+                    }}
                   >
                     Xem dịch vụ chi tiết
                   </Button>
@@ -127,55 +131,53 @@ export function UserServices() {
         </div>
 
         {/* Detailed services for selected category */}
-        {activeServiceCategory && detailedServicesByCategory[activeServiceCategory as keyof typeof detailedServicesByCategory] && (
-          <div className="mb-12">
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="text-2xl font-bold text-gray-900">
-                Dịch vụ chi tiết -
-                {mainServices.find((s) => s.category === activeServiceCategory)?.name || 'Danh mục'}
-              </h2>
-              <Button
-                type="button"
-                variant="ghost"
-                className="text-sm text-gray-500 hover:text-gray-700"
-                onClick={() => setActiveServiceCategory(null)}
-              >
-                Đóng
-              </Button>
-            </div>
-            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {detailedServicesByCategory[activeServiceCategory as keyof typeof detailedServicesByCategory].map((detail) => (
-                <Card
-                  key={detail.id}
-                  className="border border-gray-100 shadow-sm hover:shadow-md transition-all duration-200 cursor-pointer"
-                  onClick={() => navigate(`/services/${activeServiceCategory}/${detail.id}`)}
+        {activeServiceCategory &&
+          detailedServicesByCategory[activeServiceCategory as keyof typeof detailedServicesByCategory] && (
+            <div className="mb-12">
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="text-2xl font-bold text-gray-900">
+                  Dịch vụ chi tiết -{mainServices.find((s) => s.category === activeServiceCategory)?.name || "Danh mục"}
+                </h2>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  className="text-sm text-gray-500 hover:text-gray-700"
+                  onClick={() => setActiveServiceCategory(null)}
                 >
-                  <CardHeader className="pb-3">
-                    <div className="flex items-center justify-between gap-2">
-                      <CardTitle className="text-base font-semibold">{detail.name}</CardTitle>
-                      {detail.popular && (
-                        <Badge className="bg-yellow-400 text-black">Phổ biến</Badge>
-                      )}
-                    </div>
-                    <CardDescription className="mt-1 text-sm text-gray-600">
-                      {detail.description}
-                    </CardDescription>
-                  </CardHeader>
-                  <CardContent className="pt-0 pb-4 text-sm space-y-1">
-                    <div className="flex items-center justify-between">
-                      <span className="text-gray-500">Khoảng giá</span>
-                      <span className="font-semibold text-blue-600">{detail.priceRange}</span>
-                    </div>
-                    <div className="flex items-center justify-between">
-                      <span className="text-gray-500">Thời gian dự kiến</span>
-                      <span className="font-medium">{detail.duration}</span>
-                    </div>
-                  </CardContent>
-                </Card>
-              ))}
+                  Đóng
+                </Button>
+              </div>
+              <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {detailedServicesByCategory[activeServiceCategory as keyof typeof detailedServicesByCategory].map(
+                  (detail) => (
+                    <Card
+                      key={detail.id}
+                      className="border border-gray-100 shadow-sm hover:shadow-md transition-all duration-200 cursor-pointer"
+                      onClick={() => navigate(`/services/${activeServiceCategory}/${detail.id}`)}
+                    >
+                      <CardHeader className="pb-3">
+                        <div className="flex items-center justify-between gap-2">
+                          <CardTitle className="text-base font-semibold">{detail.name}</CardTitle>
+                          {detail.popular && <Badge className="bg-yellow-400 text-black">Phổ biến</Badge>}
+                        </div>
+                        <CardDescription className="mt-1 text-sm text-gray-600">{detail.description}</CardDescription>
+                      </CardHeader>
+                      <CardContent className="pt-0 pb-4 text-sm space-y-1">
+                        <div className="flex items-center justify-between">
+                          <span className="text-gray-500">Khoảng giá</span>
+                          <span className="font-semibold text-blue-600">{detail.priceRange}</span>
+                        </div>
+                        <div className="flex items-center justify-between">
+                          <span className="text-gray-500">Thời gian dự kiến</span>
+                          <span className="font-medium">{detail.duration}</span>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  )
+                )}
+              </div>
             </div>
-          </div>
-        )}
+          )}
 
         {filteredServices.length === 0 && (
           <div className="text-center py-20">
