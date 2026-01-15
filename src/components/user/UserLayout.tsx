@@ -5,9 +5,6 @@ import {
   Wrench, 
   Users, 
   Calendar, 
-  ShoppingBag, 
-  User, 
-  Bot,
   Menu,
   Phone,
   Mail,
@@ -17,17 +14,22 @@ import {
   Instagram
 } from 'lucide-react';
 import { Sheet, SheetContent, SheetTrigger } from '../ui/sheet';
+import logoWhite from '../../assets/logowhite.png';
 
 export function UserLayout() {
   const location = useLocation();
 
   const navItems = [
     { path: '/', label: 'Trang Chủ', icon: Home },
-    { path: '/services', label: 'Dịch Vụ', icon: Wrench },
-    { path: '/technicians', label: 'Tìm Thợ', icon: Users },
-    { path: '/ai', label: 'Hỏi AI', icon: Bot },
-    { path: '/orders', label: 'Đơn Hàng', icon: ShoppingBag },
-    { path: '/profile', label: 'Hồ Sơ', icon: User }
+    { path: '/about', label: 'Về Chúng Tôi', icon: Users },
+    { path: '/customer', label: 'Khách Hàng', icon: Users },
+    { path: '/technician', label: 'Thợ', icon: Users },
+    // { path: '/pricing', label: 'Bảng Giá', icon: Calendar },
+    // { path: '/services', label: 'Dịch Vụ', icon: Wrench },
+    // { path: '/ai', label: 'Hỏi AI', icon: Bot },
+    // { path: '/technicians', label: 'Tìm Thợ', icon: Users },
+    // { path: '/orders', label: 'Đơn Hàng', icon: ShoppingBag },
+    // { path: '/profile', label: 'Hồ Sơ', icon: User }
   ];
 
   const NavLinks = ({ mobile = false }: { mobile?: boolean }) => (
@@ -61,9 +63,7 @@ export function UserLayout() {
           <div className="flex items-center justify-between h-20">
             {/* Logo */}
             <Link to="/" className="flex items-center gap-3 group">
-              <div className="bg-gradient-to-br from-blue-600 to-indigo-700 text-white p-2.5 rounded-xl shadow-lg group-hover:shadow-xl transition-all duration-300 group-hover:scale-105">
-                <Wrench className="h-7 w-7" />
-              </div>
+              <img src={logoWhite} alt="Kết Nối Thợ" className="h-16 w-16 object-contain" />
               <div>
                 <h1 className="text-2xl font-bold bg-gradient-to-r from-blue-700 to-indigo-700 bg-clip-text text-transparent">Kết Nối Thợ</h1>
                 <p className="text-xs text-gray-600 font-medium">Sửa Chữa Chuyên Nghiệp</p>
@@ -129,7 +129,7 @@ export function UserLayout() {
                 Nền tảng kết nối khách hàng với các thợ sửa chữa chuyên nghiệp, uy tín trên toàn quốc.
               </p>
               <div className="flex gap-3">
-                <a href="#" className="bg-gray-800 p-3 rounded-xl hover:bg-gray-700 transition-all duration-200 hover:scale-110 hover:shadow-lg">
+                <a href="https://www.facebook.com/profile.php?id=61586111595077" className="bg-gray-800 p-3 rounded-xl hover:bg-gray-700 transition-all duration-200 hover:scale-110 hover:shadow-lg">
                   <Facebook className="h-5 w-5" />
                 </a>
                 <a href="#" className="bg-gray-800 p-3 rounded-xl hover:bg-gray-700 transition-all duration-200 hover:scale-110 hover:shadow-lg">
@@ -149,7 +149,7 @@ export function UserLayout() {
                 <li><Link to="/technicians" className="text-gray-400 hover:text-white transition-colors duration-200 flex items-center gap-2 group"><span className="w-0 group-hover:w-2 h-0.5 bg-blue-500 transition-all duration-200"></span>Tìm Thợ</Link></li>
                 <li><Link to="/about" className="text-gray-400 hover:text-white transition-colors duration-200 flex items-center gap-2 group"><span className="w-0 group-hover:w-2 h-0.5 bg-blue-500 transition-all duration-200"></span>Về Chúng Tôi</Link></li>
                 <li><Link to="/blog" className="text-gray-400 hover:text-white transition-colors duration-200 flex items-center gap-2 group"><span className="w-0 group-hover:w-2 h-0.5 bg-blue-500 transition-all duration-200"></span>Blog</Link></li>
-                <li><Link to="/careers" className="text-gray-400 hover:text-white transition-colors duration-200 flex items-center gap-2 group"><span className="w-0 group-hover:w-2 h-0.5 bg-blue-500 transition-all duration-200"></span>Tuyển Dụng</Link></li>
+                <li><Link to="/technician" className="text-gray-400 hover:text-white transition-colors duration-200 flex items-center gap-2 group"><span className="w-0 group-hover:w-2 h-0.5 bg-blue-500 transition-all duration-200"></span>Tuyển Dụng</Link></li>
               </ul>
             </div>
 
@@ -179,14 +179,14 @@ export function UserLayout() {
                   <div className="bg-gray-800 p-2 rounded-lg hover:bg-gray-700 transition-colors">
                     <Phone className="h-5 w-5 text-blue-500" />
                   </div>
-                  <a href="tel:1900123456" className="text-gray-400 hover:text-white transition-colors duration-200">1900 123 456</a>
+                  <a href="tel:0876767076" className="text-gray-400 hover:text-white transition-colors duration-200">0876767076</a>
                 </li>
                 <li className="flex items-center gap-3">
                   <div className="bg-gray-800 p-2 rounded-lg hover:bg-gray-700 transition-colors">
                     <Mail className="h-5 w-5 text-blue-500" />
                   </div>
-                  <a href="mailto:support@ketnoitho.vn" className="text-gray-400 hover:text-white transition-colors duration-200">
-                    support@ketnoitho.vn
+                  <a href="mailto:ad.fishfix@gmail.com" className="text-gray-400 hover:text-white transition-colors duration-200">
+                    ad.fishfix@gmail.com
                   </a>
                 </li>
               </ul>

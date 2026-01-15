@@ -14,9 +14,9 @@ import { CalendarIcon, Clock, MapPin, Phone, User } from 'lucide-react';
 import { toast } from 'sonner';
 
 export function UserBooking() {
-  const [searchParams] = useSearchParams();
+  // const [searchParams] = useSearchParams();
   const navigate = useNavigate();
-  const technicianId = searchParams.get('technicianId');
+  // const technicianId = searchParams.get('technicianId');
   
   const [date, setDate] = useState<Date>();
   const [formData, setFormData] = useState({

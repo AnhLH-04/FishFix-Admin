@@ -1,12 +1,108 @@
 import { Link } from 'react-router-dom';
 import { Button } from '../ui/button';
-import { Card, CardHeader, CardTitle, CardDescription } from '../ui/card';
-import { Search, Wrench, Shield, Star, CheckCircle, Zap, Award, ArrowRight } from 'lucide-react';
+import { Card } from '../ui/card';
+import { Wrench, Shield, Star, CheckCircle, Zap, Award, ArrowRight, Building2, Snowflake, Plug, Lightbulb, Sparkles, Droplet, Hammer, Truck, ClipboardList, Smartphone, Newspaper, MousePointerClick, UserCog, CreditCard, Rocket, AlertTriangle, Users, AirVent, Refrigerator, WashingMachine, Fan, Drill, PaintBucket } from 'lucide-react';
 import { ImageWithFallback } from '../figma/ImageWithFallback';
+import { TechnicianMap } from './TechnicianMap';
+// import { useState } from 'react';
+import { useScrollAnimation } from '../../hooks/useScrollAnimation';
 
 export function UserHome() {
+  // const [expandedService, setExpandedService] = useState<string | null>(null);
+  
+  // Animation hooks for each section with different thresholds
+  const featuresSection = useScrollAnimation({ threshold: 0.2 });
+  const servicesSection = useScrollAnimation({ threshold: 0.15 });
+  const aiTechSection = useScrollAnimation({ threshold: 0.2 });
+  const ctaSection = useScrollAnimation({ threshold: 0.25 });
+  const howItWorksSection = useScrollAnimation({ threshold: 0.2 });
+  const mapSection = useScrollAnimation({ threshold: 0.15 });
+
+  // const toggleService = (serviceName: string) => {
+  //   setExpandedService(expandedService === serviceName ? null : serviceName);
+  // };
   return (
     <div className="flex flex-col min-h-screen bg-white">
+      {/* Global Animation Styles */}
+      <style dangerouslySetInnerHTML={{ __html: `
+        .section-animate {
+          transition: all 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        
+        .fade-slide-up {
+          opacity: 0;
+          transform: translateY(60px);
+        }
+        
+        .fade-slide-up.visible {
+          opacity: 1;
+          transform: translateY(0);
+        }
+        
+        .fade-slide-left {
+          opacity: 0;
+          transform: translateX(-60px);
+        }
+        
+        .fade-slide-left.visible {
+          opacity: 1;
+          transform: translateX(0);
+        }
+        
+        .fade-slide-right {
+          opacity: 0;
+          transform: translateX(60px);
+        }
+        
+        .fade-slide-right.visible {
+          opacity: 1;
+          transform: translateX(0);
+        }
+        
+        .scale-fade {
+          opacity: 0;
+          transform: scale(0.85);
+        }
+        
+        .scale-fade.visible {
+          opacity: 1;
+          transform: scale(1);
+        }
+        
+        .rotate-fade {
+          opacity: 0;
+          transform: perspective(1000px) rotateX(-15deg);
+        }
+        
+        .rotate-fade.visible {
+          opacity: 1;
+          transform: perspective(1000px) rotateX(0deg);
+        }
+        
+        .blur-fade {
+          opacity: 0;
+          filter: blur(10px);
+          transform: translateY(30px);
+        }
+        
+        .blur-fade.visible {
+          opacity: 1;
+          filter: blur(0px);
+          transform: translateY(0);
+        }
+        
+        /* Staggered animations */
+        .stagger-item {
+          transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        
+        .stagger-1 { transition-delay: 0.1s; }
+        .stagger-2 { transition-delay: 0.2s; }
+        .stagger-3 { transition-delay: 0.3s; }
+        .stagger-4 { transition-delay: 0.4s; }
+        .stagger-5 { transition-delay: 0.5s; }
+        .stagger-6 { transition-delay: 0.6s; }
+      `}} />
 
 {/* Hero Section */}
       <section className="relative bg-gradient-to-br from-sky-50 via-blue-50 to-cyan-50 text-gray-800 overflow-hidden">
@@ -21,8 +117,9 @@ export function UserHome() {
             <div className="space-y-8">
               <div className="space-y-4">
                 <div className="inline-block">
-                  <span className="text-sm font-semibold bg-blue-200/40 px-4 py-2 rounded-full text-blue-700 backdrop-blur-sm">
-                    ✨ Giải pháp sửa chữa thông minh
+                  <span className="text-sm font-semibold bg-blue-200/40 px-4 py-2 rounded-full text-blue-700 backdrop-blur-sm flex items-center gap-2 w-fit">
+                    <Sparkles className="w-4 h-4" />
+                    Giải pháp sửa chữa thông minh
                   </span>
                 </div>
                 <h1 className="text-5xl md:text-6xl lg:text-7xl font-black leading-tight text-gray-900">
@@ -75,13 +172,13 @@ export function UserHome() {
 
             {/* Hero Image */}
             <div className="relative animate-float">
-              <div className="relative rounded-2xl overflow-hidden shadow-2xl">
+              <div className="relative rounded-2xl overflow-hidden">
                 <ImageWithFallback
-                  src="https://images.unsplash.com/photo-1513612027093-46da490bbd5b?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxob21lJTIwcmVwYWlyJTIwc2VydmljZXxlbnwxfHx8fDE3NjgxOTc1NzF8MA&ixlib=rb-4.1.0&q=80&w=1080&utm_source=figma&utm_medium=referral"
+                  src= 'https://res.cloudinary.com/dgds0gqq1/image/upload/v1768455637/Screenshot_2026-01-13_172259-removebg-preview_f29k8z.png'
                   alt="Home repair service"
                   className="w-full h-auto"
                 />
-                <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent"></div>
+                {/* <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent"></div> */}
               </div>
             </div>
           </div>
@@ -89,7 +186,12 @@ export function UserHome() {
       </section>
 
       {/* Features Section */}
-      <section className="py-16 bg-white">
+      <section 
+        ref={featuresSection.ref}
+        className={`py-16 bg-white section-animate fade-slide-up ${
+          featuresSection.isVisible ? 'visible' : ''
+        }`}
+      >
         <div className="max-w-[1400px] mx-auto px-3 sm:px-4 lg:px-6">
           <h2 className="text-4xl md:text-5xl font-black text-gray-900 mb-12">
             Tại sao chọn FishFix?
@@ -104,7 +206,12 @@ export function UserHome() {
                 { icon: Star, title: 'Đánh giá minh bạch', desc: 'Xem đánh giá thực từ khách hàng trước khi chọn thợ' },
                 { icon: CheckCircle, title: 'Bảo hành dịch vụ', desc: 'Cam kết bảo hành cho mọi công việc sửa chữa' },
               ].map((feature, index) => (
-                <div key={index} className="flex gap-4 p-4 rounded-xl hover:bg-gray-50 transition-colors">
+                <div 
+                  key={index} 
+                  className={`flex gap-4 p-4 rounded-xl hover:bg-gray-50 stagger-item fade-slide-left stagger-${index + 1} ${
+                    featuresSection.isVisible ? 'visible' : ''
+                  }`}
+                >
                   <div className="h-14 w-14 rounded-xl bg-blue-100 flex items-center justify-center flex-shrink-0">
                     <feature.icon className="h-7 w-7 text-blue-600" />
                   </div>
@@ -117,7 +224,11 @@ export function UserHome() {
             </div>
 
             {/* Right Column - AI Card */}
-            <div className="lg:sticky lg:top-8">
+            <div 
+              className={`lg:sticky lg:top-8 stagger-item fade-slide-right stagger-3 ${
+                featuresSection.isVisible ? 'visible' : ''
+              }`}
+            >
               <div className="relative">
                 <div className="absolute inset-0 bg-gradient-to-br from-blue-400/20 to-cyan-400/20 rounded-3xl blur-2xl" />
                 <Card className="relative border-2 border-gray-200 shadow-xl rounded-3xl overflow-hidden bg-white">
@@ -151,7 +262,7 @@ export function UserHome() {
                     
                     <div className="bg-yellow-50 border border-yellow-200 rounded-xl p-4">
                       <p className="text-xs text-yellow-800 flex items-start gap-2">
-                        <span className="flex-shrink-0">⚠️</span>
+                        <AlertTriangle className="w-4 h-4 flex-shrink-0 mt-0.5" />
                         <span>Đây chỉ là ước lượng. Chi phí thực tế có thể thay đổi sau khi kiểm tra.</span>
                       </p>
                     </div>
@@ -171,148 +282,619 @@ export function UserHome() {
       </section>
 
       {/* Services Preview */}
-      <section className="py-24 bg-gradient-to-b from-white to-gray-50">
-        <div className="container mx-auto px-4">
-          <div className="text-center mb-20">
-            <span className="inline-block text-blue-600 font-semibold text-sm uppercase tracking-wider mb-4 bg-blue-50 px-4 py-2 rounded-full">
-              Dịch Vụ
-            </span>
-            <h2 className="text-5xl md:text-6xl font-black text-gray-900 mb-6">Dịch Vụ Của FishFix</h2>
-            <p className="text-xl text-gray-600 max-w-2xl mx-auto font-light">
-              Chọn dịch vụ và tìm thợ trong vài giây
+      <section 
+        ref={servicesSection.ref}
+        className={`py-24 bg-gradient-to-b from-blue-50 via-white to-cyan-50 relative overflow-hidden section-animate scale-fade ${
+          servicesSection.isVisible ? 'visible' : ''
+        }`}
+      >
+        {/* Background decorations */}
+        <div className="absolute top-0 left-0 w-96 h-96 bg-blue-200/20 rounded-full blur-3xl"></div>
+        <div className="absolute bottom-0 right-0 w-96 h-96 bg-cyan-200/20 rounded-full blur-3xl"></div>
+        
+        <div className="container mx-auto px-4 relative z-10">
+          <div className="text-center mb-12">
+            <h2 className="text-3xl md:text-4xl font-bold text-gray-800 mb-3">
+              DỊCH VỤ CỦA FISHFIX
+            </h2>
+            <p className="text-gray-600 text-base">
+              Kết nối với dịch vụ sửa chữa chuyên nghiệp chỉ với một cú click
             </p>
           </div>
 
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-6 max-w-6xl mx-auto mb-12">
-            {[
-              { name: 'Sửa Điện', icon: '⚡', color: 'from-yellow-400 via-orange-400 to-red-400' },
-              { name: 'Sửa Nước', icon: '💧', color: 'from-blue-400 via-cyan-400 to-teal-400' },
-              { name: 'Điều Hòa', icon: '❄️', color: 'from-cyan-400 via-sky-400 to-blue-400' },
-              { name: 'Sơn Nhà', icon: '🎨', color: 'from-pink-400 via-rose-400 to-red-400' },
-              { name: 'Sửa Điện Tử', icon: '📱', color: 'from-purple-400 via-violet-400 to-indigo-400' },
-              { name: 'Mộc & Đồ Gỗ', icon: '🪵', color: 'from-amber-400 via-orange-400 to-yellow-600' },
-              { name: 'Sửa Xe', icon: '🏍️', color: 'from-red-400 via-rose-400 to-pink-400' },
-              { name: 'Vệ Sinh', icon: '🧹', color: 'from-green-400 via-emerald-400 to-teal-400' }
-            ].map((service, index) => (
-              <Link key={service.name} to="/services">
-                <div className="group relative">
-                  <div className={`absolute inset-0 bg-gradient-to-br ${service.color} rounded-3xl blur-xl opacity-0 group-hover:opacity-60 transition-all duration-500`}></div>
-                  <Card className="relative border-0 shadow-lg hover:shadow-2xl transition-all duration-500 hover:-translate-y-4 cursor-pointer bg-white rounded-3xl overflow-hidden">
-                    <CardHeader className="text-center p-8">
-                      <div 
-                        className={`mx-auto bg-gradient-to-br ${service.color} w-24 h-24 rounded-2xl flex items-center justify-center mb-5 shadow-xl group-hover:scale-125 group-hover:rotate-12 transition-all duration-500`}
-                        style={{animationDelay: `${index * 0.1}s`}}
-                      >
-                        <div className="text-5xl filter drop-shadow-lg">{service.icon}</div>
+          {/* Infinite Scroll Carousel */}
+          <div className="relative">
+            <style dangerouslySetInnerHTML={{ __html: `
+              @keyframes scroll {
+                0% {
+                  transform: translateX(0);
+                }
+                100% {
+                  transform: translateX(-50%);
+                }
+              }
+              .animate-scroll {
+                animation: scroll 40s linear infinite;
+              }
+              .animate-scroll:hover {
+                animation-play-state: paused;
+              }
+            `}} />
+            
+            {/* Fade masks on both sides */}
+            <div className="absolute left-0 top-0 bottom-0 w-32 bg-gradient-to-r from-white via-white/50 to-transparent z-10 pointer-events-none"></div>
+            <div className="absolute right-0 top-0 bottom-0 w-32 bg-gradient-to-l from-white via-white/50 to-transparent z-10 pointer-events-none"></div>
+            
+            <div className="overflow-hidden">
+              <div className="flex animate-scroll" style={{ width: 'max-content' }}>
+                {/* First set of services */}
+                {[
+                  { name: 'Xây Dựng', icon: Building2 },
+                  { name: 'Cơ Khí', icon: Wrench },
+                  { name: 'Điện Lạnh', icon: Snowflake },
+                  { name: 'Điện Máy', icon: Plug },
+                  { name: 'Điện Nước', icon: Lightbulb },
+                  { name: 'Vệ Sinh', icon: Sparkles },
+                  { name: 'Thông Nghẹt', icon: Droplet },
+                  { name: 'Đồ Gỗ', icon: Hammer },
+                  { name: 'Vận Chuyển', icon: Truck },
+                  { name: 'Bảng Giá', icon: ClipboardList },
+                  { name: 'Ứng Dụng', icon: Smartphone },
+                  { name: 'Tin Tức', icon: Newspaper }
+                ].concat([
+                  { name: 'Xây Dựng', icon: Building2 },
+                  { name: 'Cơ Khí', icon: Wrench },
+                  { name: 'Điện Lạnh', icon: Snowflake },
+                  { name: 'Điện Máy', icon: Plug },
+                  { name: 'Điện Nước', icon: Lightbulb },
+                  { name: 'Vệ Sinh', icon: Sparkles },
+                  { name: 'Thông Nghẹt', icon: Droplet },
+                  { name: 'Đồ Gỗ', icon: Hammer },
+                  { name: 'Vận Chuyển', icon: Truck },
+                  { name: 'Bảng Giá', icon: ClipboardList },
+                  { name: 'Ứng Dụng', icon: Smartphone },
+                  { name: 'Tin Tức', icon: Newspaper }
+                ]).map((service, index) => (
+                  <div
+                    key={`${service.name}-${index}`}
+                    className="flex-shrink-0 mx-4 group cursor-pointer"
+                  >
+                    <div className="flex flex-col items-center gap-3 p-6 bg-white/50 backdrop-blur-sm rounded-2xl border border-gray-200 hover:border-blue-400 hover:shadow-lg transition-all duration-300 hover:-translate-y-1 min-w-[160px]">
+                      <div className="w-16 h-16 rounded-full bg-gradient-to-br from-blue-400 to-cyan-500 flex items-center justify-center shadow-md group-hover:scale-110 transition-transform duration-300">
+                        <service.icon className="w-8 h-8 text-white" strokeWidth={2} />
                       </div>
-                      <CardTitle className="text-xl font-bold group-hover:text-blue-600 transition-colors">{service.name}</CardTitle>
-                    </CardHeader>
-                  </Card>
-                </div>
-              </Link>
-            ))}
+                      <span className="text-sm font-semibold text-gray-700 group-hover:text-blue-600 transition-colors whitespace-nowrap">
+                        {service.name}
+                      </span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
           </div>
 
-          <div className="text-center">
+          {/* View All Button */}
+          <div className="text-center mt-12">
             <Link to="/services">
-              <Button size="lg" className="bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700 text-white shadow-2xl hover:shadow-blue-500/50 transition-all duration-300 text-xl font-bold px-12 py-8 h-auto rounded-2xl group">
+              <Button size="lg" className="bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700 text-white shadow-lg hover:shadow-xl transition-all duration-300 font-semibold px-8">
                 Xem Tất Cả Dịch Vụ
-                <Search className="ml-3 h-6 w-6 group-hover:translate-x-1 transition-transform" />
+                <ArrowRight className="ml-2 h-5 w-5" />
               </Button>
             </Link>
           </div>
         </div>
       </section>
 
-      {/* Stats Section */}
-      <section className="py-24 bg-gradient-to-br from-slate-900 via-blue-900 to-indigo-900 text-white relative overflow-hidden">
-        <div className="absolute inset-0">
-          <div className="absolute top-0 left-1/4 w-96 h-96 bg-blue-500/20 rounded-full blur-3xl animate-pulse"></div>
-          <div className="absolute bottom-0 right-1/4 w-96 h-96 bg-cyan-500/20 rounded-full blur-3xl animate-pulse" style={{animationDelay: '2s'}}></div>
-        </div>
-
-        <div className="container mx-auto px-4 relative z-10">
+      {/* AI Technology Section */}
+      <section 
+        ref={aiTechSection.ref}
+        className={`py-20 bg-gradient-to-b from-white to-gray-50 overflow-hidden section-animate rotate-fade ${
+          aiTechSection.isVisible ? 'visible' : ''
+        }`}
+      >
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          {/* Header */}
           <div className="text-center mb-16">
-            <h2 className="text-4xl md:text-5xl font-black mb-4">Con Số Ấn Tượng</h2>
-            <p className="text-xl text-blue-200 font-light">Được tin tưởng bởi hàng ngàn người dùng</p>
+            <div className="inline-block mb-4">
+              <span className="text-sm font-bold tracking-widest text-blue-600 uppercase">
+                Công nghệ
+              </span>
+            </div>
+            <h2 className="text-3xl md:text-5xl font-black text-gray-900 mb-4">
+              Áp dụng công nghệ AI đột phá
+            </h2>
           </div>
 
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-8 max-w-5xl mx-auto">
-            {[
-              { value: '5K+', label: 'Thợ Sửa', sub: 'Được xác minh', gradient: 'from-yellow-300 via-orange-300 to-pink-300' },
-              { value: '50K+', label: 'Khách Hàng', sub: 'Hài lòng', gradient: 'from-cyan-300 via-blue-300 to-indigo-300' },
-              { value: '100K+', label: 'Công Việc', sub: 'Hoàn thành', gradient: 'from-green-300 via-emerald-300 to-teal-300' },
-              { value: '4.9★', label: 'Đánh Giá', sub: 'Trung bình', gradient: 'from-yellow-300 via-amber-300 to-orange-300' }
-            ].map((stat) => (
-              <div key={stat.label} className="text-center group cursor-pointer">
-                <div className="bg-white/10 backdrop-blur-md border border-white/20 rounded-3xl p-8 hover:bg-white/20 transition-all duration-300 hover:scale-105">
-                  <div className={`text-6xl md:text-7xl font-black mb-3 bg-gradient-to-r ${stat.gradient} bg-clip-text text-transparent`}>
-                    {stat.value}
-                  </div>
-                  <div className="text-blue-200 text-lg font-semibold mb-1">{stat.label}</div>
-                  <div className="text-blue-300/60 text-sm">{stat.sub}</div>
-                </div>
+          {/* Animation Styles */}
+          <style dangerouslySetInnerHTML={{ __html: `
+            @keyframes fadeInUp {
+              from {
+                opacity: 0;
+                transform: translateY(30px);
+              }
+              to {
+                opacity: 1;
+                transform: translateY(0);
+              }
+            }
+            .animate-fadeInUp {
+              animation: fadeInUp 0.8s ease-out forwards;
+              opacity: 0;
+            }
+            .delay-200 {
+              animation-delay: 0.5s;
+            }
+            .delay-400 {
+              animation-delay: 1s;
+            }
+            .delay-600 {
+              animation-delay: 1.5s;
+            }
+            .delay-800 {
+              animation-delay: 2s;
+            }
+            .delay-1000 {
+              animation-delay: 2.5s;
+            }
+          `}} />
+
+          {/* Content Grid */}
+          <div className="relative grid grid-cols-1 lg:grid-cols-12 gap-8 items-center">
+            
+            {/* Left Features */}
+            <div className="lg:col-span-4 space-y-6">
+              {/* Feature 1 */}
+              <div className="bg-white rounded-2xl p-6 shadow-lg hover:shadow-xl transition-all duration-300 border border-gray-100 animate-fadeInUp delay-200">
+                <h3 className="text-xl font-bold text-gray-900 mb-3">
+                  Trợ Lý AI Thông Minh
+                </h3>
+                <p className="text-gray-600 leading-relaxed">
+                  Giúp xác định rõ vấn đề của Khách Hàng, từ đó tìm đúng Thợ phù hợp cho Khách Hàng
+                </p>
               </div>
-            ))}
+
+              {/* Feature 2 */}
+              <div className="bg-white rounded-2xl p-6 shadow-lg hover:shadow-xl transition-all duration-300 border border-gray-100 animate-fadeInUp delay-400">
+                <h3 className="text-xl font-bold text-gray-900 mb-3">
+                  Sự Đa Dạng Ngôn Ngữ Với AI
+                </h3>
+                <p className="text-gray-600 leading-relaxed">
+                  Không bao giờ bị rào cản ngôn ngữ ngăn cách bạn và giải pháp mà bạn cần
+                </p>
+              </div>
+            </div>
+
+            {/* Center Image */}
+            <div className="lg:col-span-4 flex justify-center animate-fadeInUp">
+              <div className="relative w-full max-w-md aspect-square">
+                <ImageWithFallback
+                  src="https://res.cloudinary.com/dgds0gqq1/image/upload/v1768455637/Screenshot_2026-01-13_172259-removebg-preview_f29k8z.png"
+                  alt="AI Technology"
+                  className="w-full h-full object-contain drop-shadow-2xl"
+                />
+              </div>
+            </div>
+
+            {/* Right Features */}
+            <div className="lg:col-span-4 space-y-6">
+              {/* Feature 3 */}
+              <div className="bg-white rounded-2xl p-6 shadow-lg hover:shadow-xl transition-all duration-300 border border-gray-100 animate-fadeInUp delay-600">
+                <h3 className="text-xl font-bold text-gray-900 mb-3">
+                  AI Hỗ Trợ Kiểm Tra Kỹ Năng Thợ
+                </h3>
+                <p className="text-gray-600 leading-relaxed">
+                  Nâng cao chất lượng Thợ và đảm bảo dịch vụ hoàn hảo tốt nhất cho Khách hàng
+                </p>
+              </div>
+
+              {/* Feature 4 */}
+              <div className="bg-white rounded-2xl p-6 shadow-lg hover:shadow-xl transition-all duration-300 border border-gray-100 animate-fadeInUp delay-800">
+                <h3 className="text-xl font-bold text-gray-900 mb-3">
+                  Tốc Độ Và Hiệu Suất Vượt Trội
+                </h3>
+                <p className="text-gray-600 leading-relaxed">
+                  AI giúp bạn tiết kiệm thời gian và tìm ra giải pháp một cách nhanh nhất
+                </p>
+              </div>
+            </div>
           </div>
         </div>
       </section>
 
       {/* CTA Section */}
-      <section className="py-32 bg-gradient-to-b from-gray-50 to-white">
-        <div className="container mx-auto px-4">
-          <div className="max-w-5xl mx-auto relative">
-            <div className="absolute -top-20 -left-20 w-72 h-72 bg-blue-400/30 rounded-full blur-3xl"></div>
-            <div className="absolute -bottom-20 -right-20 w-72 h-72 bg-cyan-400/30 rounded-full blur-3xl"></div>
+      <section 
+        ref={ctaSection.ref}
+        className={`py-12 bg-gray-50 section-animate blur-fade ${
+          ctaSection.isVisible ? 'visible' : ''
+        }`}
+      >
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="relative bg-gradient-to-br from-blue-600 via-blue-700 to-cyan-600 text-white overflow-hidden rounded-3xl">
+            {/* Orbital Animation Styles */}
+            <style dangerouslySetInnerHTML={{ __html: `
+          @keyframes orbit {
+            0% {
+              transform: rotate(0deg) translateX(100px) rotate(0deg);
+            }
+            100% {
+              transform: rotate(360deg) translateX(100px) rotate(-360deg);
+            }
+          }
+          
+          @keyframes orbit-reverse {
+            0% {
+              transform: rotate(0deg) translateX(120px) rotate(0deg);
+            }
+            100% {
+              transform: rotate(-360deg) translateX(120px) rotate(360deg);
+            }
+          }
+          
+          @keyframes orbit-large {
+            0% {
+              transform: rotate(0deg) translateX(150px) rotate(0deg);
+            }
+            100% {
+              transform: rotate(360deg) translateX(150px) rotate(-360deg);
+            }
+          }
+          
+          @keyframes orbit-small {
+            0% {
+              transform: rotate(0deg) translateX(80px) rotate(0deg);
+            }
+            100% {
+              transform: rotate(360deg) translateX(80px) rotate(-360deg);
+            }
+          }
+          
+          .animate-orbit-1 {
+            animation: orbit 20s linear infinite;
+          }
+          
+          .animate-orbit-2 {
+            animation: orbit-reverse 25s linear infinite;
+          }
+          
+          .animate-orbit-3 {
+            animation: orbit-large 30s linear infinite;
+          }
+          
+          .animate-orbit-4 {
+            animation: orbit-small 18s linear infinite;
+          }
+          
+          .animate-orbit-5 {
+            animation: orbit 35s linear infinite reverse;
+          }
+          
+          .animate-orbit-6 {
+            animation: orbit-reverse 22s linear infinite;
+          }
+          
+          .animate-orbit-7 {
+            animation: orbit-large 28s linear infinite reverse;
+          }
+          
+          .animate-orbit-8 {
+            animation: orbit-small 24s linear infinite;
+          }
+          
+          .animate-orbit-9 {
+            animation: orbit 32s linear infinite;
+          }
+          
+          .animate-orbit-10 {
+            animation: orbit-reverse 26s linear infinite reverse;
+          }
+        `}} />
+        
+        {/* Animated Background Elements */}
+        <div className="absolute top-0 left-0 w-96 h-96 bg-white/10 rounded-full blur-3xl animate-blob"></div>
+        <div className="absolute bottom-0 right-0 w-96 h-96 bg-cyan-400/20 rounded-full blur-3xl animate-blob animation-delay-2000"></div>
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-blue-500/10 rounded-full blur-3xl animate-blob animation-delay-4000"></div>
+        
+        {/* Floating Icons - Enhanced with orbital animation */}
+        <div className="absolute top-20 left-10 animate-orbit-1">
+          <div className="w-16 h-16 bg-white/10 backdrop-blur-sm rounded-2xl flex items-center justify-center hover:bg-white/20 transition-all hover:scale-110">
+            <Wrench className="w-8 h-8 text-white/60" />
+          </div>
+        </div>
+        <div className="absolute bottom-20 right-20 animate-orbit-2">
+          <div className="w-20 h-20 bg-white/10 backdrop-blur-sm rounded-2xl flex items-center justify-center hover:bg-white/20 transition-all hover:scale-110">
+            <Zap className="w-10 h-10 text-white/60" />
+          </div>
+        </div>
+        <div className="absolute top-1/3 right-10 animate-orbit-3">
+          <div className="w-12 h-12 bg-white/10 backdrop-blur-sm rounded-full flex items-center justify-center hover:bg-white/20 transition-all hover:scale-110">
+            <Star className="w-6 h-6 text-yellow-300 fill-yellow-300" />
+          </div>
+        </div>
+        <div className="absolute top-40 left-1/4 animate-orbit-4">
+          <div className="w-14 h-14 bg-white/10 backdrop-blur-sm rounded-2xl flex items-center justify-center hover:bg-white/20 transition-all hover:scale-110">
+            <Users className="w-7 h-7 text-white/50" />
+          </div>
+        </div>
+        <div className="absolute bottom-32 left-20 animate-orbit-5">
+          <div className="w-16 h-16 bg-white/10 backdrop-blur-sm rounded-full flex items-center justify-center hover:bg-white/20 transition-all hover:scale-110">
+            <AirVent className="w-8 h-8 text-white/60" />
+          </div>
+        </div>
+        <div className="absolute top-1/4 right-1/4 animate-orbit-6">
+          <div className="w-14 h-14 bg-white/10 backdrop-blur-sm rounded-2xl flex items-center justify-center hover:bg-white/20 transition-all hover:scale-110">
+            <Refrigerator className="w-7 h-7 text-white/50" />
+          </div>
+        </div>
+        <div className="absolute bottom-40 right-1/3 animate-orbit-7">
+          <div className="w-12 h-12 bg-white/10 backdrop-blur-sm rounded-full flex items-center justify-center hover:bg-white/20 transition-all hover:scale-110">
+            <WashingMachine className="w-6 h-6 text-white/50" />
+          </div>
+        </div>
+        <div className="absolute top-1/2 left-16 animate-orbit-8">
+          <div className="w-14 h-14 bg-white/10 backdrop-blur-sm rounded-2xl flex items-center justify-center hover:bg-white/20 transition-all hover:scale-110">
+            <Fan className="w-7 h-7 text-white/60" />
+          </div>
+        </div>
+        <div className="absolute top-2/3 right-16 animate-orbit-9">
+          <div className="w-12 h-12 bg-white/10 backdrop-blur-sm rounded-full flex items-center justify-center hover:bg-white/20 transition-all hover:scale-110">
+            <Drill className="w-6 h-6 text-white/50" />
+          </div>
+        </div>
+        <div className="absolute bottom-1/4 left-1/3 animate-orbit-10">
+          <div className="w-16 h-16 bg-white/10 backdrop-blur-sm rounded-2xl flex items-center justify-center hover:bg-white/20 transition-all hover:scale-110">
+            <PaintBucket className="w-8 h-8 text-white/60" />
+          </div>
+        </div>
+        
+        <div className="relative max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 text-center z-10 py-16">
+          {/* Badge */}
+          <div className="inline-block mb-6">
+            <span className="text-sm font-bold bg-white/20 backdrop-blur-sm px-5 py-2 rounded-full text-white border border-white/30 flex items-center gap-2 w-fit mx-auto">
+              <Rocket className="w-4 h-4" />
+              Tham Gia Cộng Đồng FishFix
+            </span>
+          </div>
+          
+          {/* Heading */}
+          <h2 className="text-4xl md:text-6xl font-black mb-6 leading-tight">
+            Sẵn sàng trải nghiệm
+            <br />
+            <span className="text-transparent bg-clip-text bg-gradient-to-r from-cyan-200 via-white to-blue-200">
+              dịch vụ sửa chữa thế hệ mới?
+            </span>
+          </h2>
+          
+          {/* Description */}
+          <p className="text-lg md:text-xl mb-10 text-blue-100 max-w-2xl mx-auto leading-relaxed">
+            Hàng nghìn khách hàng đã tin tưởng. Đăng ký ngay để nhận ưu đãi đặc biệt dành cho thành viên mới!
+          </p>
+          
+          {/* CTA Buttons */}
+          <div className="flex flex-col sm:flex-row gap-4 justify-center mb-12">
+            <Link to="/customer/register" className="group">
+              <Button 
+                size="lg" 
+                className="bg-white text-blue-600 hover:bg-blue-50 w-full sm:w-auto px-8 py-6 text-lg font-bold shadow-2xl hover:shadow-white/20 transition-all duration-300 hover:scale-105 rounded-xl"
+              >
+                <span className="flex items-center gap-3">
+                  Đăng ký khách hàng
+                  <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
+                </span>
+              </Button>
+            </Link>
+            <Link to="/technician/register" className="group">
+              <Button 
+                size="lg" 
+                variant="outline" 
+                className="border-2 border-white text-white hover:bg-white hover:text-blue-600 w-full sm:w-auto px-8 py-6 text-lg font-bold backdrop-blur-sm bg-white/10 transition-all duration-300 hover:scale-105 rounded-xl"
+              >
+                <span className="flex items-center gap-3">
+                  Đăng ký làm thợ
+                  <Award className="w-5 h-5 group-hover:rotate-12 transition-transform" />
+                </span>
+              </Button>
+            </Link>
+          </div>
+          
+          {/* Trust Badges */}
+          <div className="flex flex-wrap justify-center gap-6 md:gap-10 pt-8 border-t border-white/20">
+            <div className="flex items-center gap-3 group cursor-pointer">
+              <div className="w-12 h-12 bg-white/10 backdrop-blur-sm rounded-full flex items-center justify-center group-hover:bg-white/20 transition-all">
+                <CheckCircle className="w-6 h-6 text-green-300" />
+              </div>
+              <div className="text-left">
+                <div className="font-bold text-base">Minh bạch</div>
+                <div className="text-xs text-blue-200">Không phí ẩn</div>
+              </div>
+            </div>
             
-            <div className="relative bg-gradient-to-br from-indigo-600 via-blue-600 to-cyan-500 rounded-[3rem] shadow-2xl p-12 md:p-20 text-center text-white overflow-hidden">
-              <div className="absolute top-10 right-10 w-32 h-32 bg-white/10 rounded-full blur-xl animate-pulse"></div>
-              <div className="absolute bottom-10 left-10 w-40 h-40 bg-white/10 rounded-full blur-xl animate-pulse" style={{animationDelay: '1s'}}></div>
-              
-              <div className="relative z-10">
-                <div className="inline-flex items-center gap-2 bg-white/20 backdrop-blur-md border border-white/30 rounded-full px-6 py-3 mb-8">
-                  <Zap className="w-5 h-5 text-yellow-300" />
-                  <span className="font-semibold">Miễn phí đăng ký</span>
-                </div>
+            <div className="flex items-center gap-3 group cursor-pointer">
+              <div className="w-12 h-12 bg-white/10 backdrop-blur-sm rounded-full flex items-center justify-center group-hover:bg-white/20 transition-all">
+                <Shield className="w-6 h-6 text-blue-300" />
+              </div>
+              <div className="text-left">
+                <div className="font-bold text-base">An toàn</div>
+                <div className="text-xs text-blue-200">Bảo mật 100%</div>
+              </div>
+            </div>
+            
+            <div className="flex items-center gap-3 group cursor-pointer">
+              <div className="w-12 h-12 bg-white/10 backdrop-blur-sm roundecd-full flex items-center justify-center group-hover:bg-white/20 transition-all">
+                <Star className="w-6 h-6 text-yellow-300 fill-yellow-300" />
+              </div>
+              <div className="text-left">
+                <div className="font-bold text-base">Tận tâm</div>
+                <div className="text-xs text-blue-200">Hỗ trợ 24/7</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      </div>
+      </section>
 
-                <h2 className="text-5xl md:text-6xl font-black mb-6 leading-tight">
-                  Bắt Đầu Ngay<br />Hôm Nay! 🚀
-                </h2>
-                
-                <p className="text-2xl md:text-3xl text-white/90 mb-12 max-w-3xl mx-auto leading-relaxed font-light">
-                  Tìm thợ chuyên nghiệp trong <span className="font-bold text-yellow-300">5 phút</span>
-                </p>
+      {/* How It Works Section */}
+      <section 
+        ref={howItWorksSection.ref}
+        className={`w-full px-4 md:px-10 py-16 bg-gray-50 section-animate fade-slide-right ${
+          howItWorksSection.isVisible ? 'visible' : ''
+        }`}
+      >
+        <div className="mx-auto max-w-7xl">
+          <div className="text-center mb-12">
+            <h2 className="text-3xl md:text-4xl font-bold text-gray-900 tracking-tight">
+              Quy Trình Hoạt Động
+            </h2>
+            <p className="text-gray-600 mt-3 max-w-xl mx-auto text-lg">
+              Đơn giản, minh bạch và an toàn. FishFix giúp bạn giải quyết vấn đề chỉ trong 3 bước.
+            </p>
+          </div>
+          
+          <div className="relative grid grid-cols-1 md:grid-cols-3 gap-8">
+            {/* Connector Line (Desktop) */}
+            <div className="hidden md:block absolute top-10 left-[16%] right-[16%] h-0.5 -z-0">
+              <div className="w-full border-t-2 border-dashed border-gray-300"></div>
+            </div>
+            
+            {/* Step 1 */}
+            <div 
+              className={`relative z-10 flex flex-col items-center text-center group stagger-item fade-slide-up stagger-2 ${
+                howItWorksSection.isVisible ? 'visible' : ''
+              }`}
+            >
+              <div className="mb-6 flex w-20 h-20 items-center justify-center rounded-2xl bg-white shadow-lg border border-gray-200 text-blue-600 transition-all duration-300 group-hover:scale-110 group-hover:shadow-xl group-hover:bg-blue-50">
+                <MousePointerClick className="w-10 h-10" strokeWidth={2} />
+              </div>
+              <h3 className="text-xl font-bold text-gray-900 mb-2">
+                1. Chọn Dịch Vụ
+              </h3>
+              <p className="text-gray-600 max-w-xs">
+                Tìm kiếm vấn đề bạn đang gặp phải và đặt lịch hẹn với thời gian phù hợp.
+              </p>
+            </div>
+            
+            {/* Step 2 */}
+            <div 
+              className={`relative z-10 flex flex-col items-center text-center group stagger-item fade-slide-up stagger-4 ${
+                howItWorksSection.isVisible ? 'visible' : ''
+              }`}
+            >
+              <div className="mb-6 flex w-20 h-20 items-center justify-center rounded-2xl bg-white shadow-lg border border-gray-200 text-blue-600 transition-all duration-300 group-hover:scale-110 group-hover:shadow-xl group-hover:bg-blue-50">
+                <UserCog className="w-10 h-10" strokeWidth={2} />
+              </div>
+              <h3 className="text-xl font-bold text-gray-900 mb-2">
+                2. Thợ Đến Ngay
+              </h3>
+              <p className="text-gray-600 max-w-xs">
+                Đối tác thợ gần nhất sẽ nhận đơn và có mặt tại nhà bạn đúng giờ để kiểm tra.
+              </p>
+            </div>
+            
+            {/* Step 3 */}
+            <div 
+              className={`relative z-10 flex flex-col items-center text-center group stagger-item fade-slide-up stagger-6 ${
+                howItWorksSection.isVisible ? 'visible' : ''
+              }`}
+            >
+              <div className="mb-6 flex w-20 h-20 items-center justify-center rounded-2xl bg-white shadow-lg border border-gray-200 text-blue-600 transition-all duration-300 group-hover:scale-110 group-hover:shadow-xl group-hover:bg-blue-50">
+                <CreditCard className="w-10 h-10" strokeWidth={2} />
+              </div>
+              <h3 className="text-xl font-bold text-gray-900 mb-2">
+                3. Nghiệm Thu & Thanh Toán
+              </h3>
+              <p className="text-gray-600 max-w-xs">
+                Kiểm tra kết quả sửa chữa, thanh toán minh bạch qua ứng dụng và đánh giá thợ.
+              </p>
+            </div>
+          </div>
+        </div>
+      </section>
 
-                <div className="flex flex-col sm:flex-row gap-4 justify-center">
-                  <Link to="/services">
-                    <Button size="lg" className="bg-white text-blue-700 hover:bg-yellow-300 hover:text-blue-900 shadow-2xl hover:shadow-white/50 transition-all duration-300 text-2xl font-bold px-14 py-9 h-auto rounded-2xl group">
-                      <Wrench className="mr-3 h-8 w-8 group-hover:rotate-12 transition-transform" />
-                      Tìm Thợ Ngay
-                    </Button>
-                  </Link>
-                  <Link to="/technicians">
-                    <Button size="lg" variant="outline" className="bg-white/10 backdrop-blur-md border-2 border-white/30 text-white hover:bg-white hover:text-blue-700 transition-all duration-300 text-2xl font-semibold px-14 py-9 h-auto rounded-2xl">
-                      Duyệt Thợ
-                    </Button>
-                  </Link>
-                </div>
+      {/* Active Technicians Map Section */}
+      <section 
+        ref={mapSection.ref}
+        className={`py-20 bg-gradient-to-b from-blue-50 via-white to-cyan-50 relative overflow-hidden section-animate fade-slide-left ${
+          mapSection.isVisible ? 'visible' : ''
+        }`}
+      >
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          {/* Header */}
+          <div className="text-center mb-12">
+            <h2 className="text-3xl md:text-5xl font-black text-gray-900 mb-4">
+              <span className="text-blue-600">Khu vực</span> thợ đang hoạt động
+            </h2>
+            <p className="text-lg text-gray-600 max-w-2xl mx-auto">
+              Hàng trăm thợ chuyên nghiệp đang sẵn sàng phục vụ bạn trong khu vực TP.HCM và các tỉnh lân cận
+            </p>
+          </div>
 
-                <div className="flex flex-wrap justify-center gap-8 mt-12 text-white/80">
-                  <div className="flex items-center gap-2">
-                    <CheckCircle className="w-6 h-6 text-green-300" />
-                    <span className="font-semibold">Không phí ẩn</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <Shield className="w-6 h-6 text-blue-300" />
-                    <span className="font-semibold">Bảo mật 100%</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <Star className="w-6 h-6 text-yellow-300 fill-yellow-300" />
-                    <span className="font-semibold">Hỗ trợ 24/7</span>
-                  </div>
+          {/* Interactive Map */}
+          <TechnicianMap />
+
+          {/* Stats Overlay - Move below map */}
+          <div className="mt-6 flex flex-wrap gap-4 justify-center">
+            <div className="bg-white rounded-2xl px-6 py-4 shadow-lg border border-gray-200">
+              <div className="flex items-center gap-3">
+                <div className="w-3 h-3 bg-green-500 rounded-full animate-pulse"></div>
+                <div>
+                  <div className="text-2xl font-black text-gray-900">50+</div>
+                  <div className="text-xs text-gray-600">Thợ đang online</div>
                 </div>
               </div>
             </div>
+
+            <div className="bg-white rounded-2xl px-6 py-4 shadow-lg border border-gray-200">
+              <div className="flex items-center gap-3">
+                <div className="w-3 h-3 bg-blue-500 rounded-full animate-pulse"></div>
+                <div>
+                  <div className="text-2xl font-black text-gray-900">{'<'} 15 phút</div>
+                  <div className="text-xs text-gray-600">Thời gian phản hồi</div>
+                </div>
+              </div>
+            </div>
+
+            <div className="bg-white rounded-2xl px-6 py-4 shadow-lg border border-gray-200">
+              <div className="flex items-center gap-3">
+                <div className="w-3 h-3 bg-amber-500 rounded-full animate-pulse"></div>
+                <div>
+                  <div className="text-2xl font-black text-gray-900">24/7</div>
+                  <div className="text-xs text-gray-600">Sẵn sàng phục vụ</div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Coverage Info */}
+          <div className="mt-12 grid grid-cols-1 md:grid-cols-3 gap-6">
+            <Card className="border-2 border-gray-100 hover:border-blue-200 transition-all">
+              <div className="p-6 text-center">
+                <div className="w-12 h-12 bg-blue-50 rounded-full flex items-center justify-center mx-auto mb-4">
+                  <Users className="w-6 h-6 text-blue-600" />
+                </div>
+                <h3 className="font-bold text-lg mb-2">Phủ sóng toàn diện</h3>
+                <p className="text-gray-600 text-sm">Bao phủ tất cả 24 quận huyện tại TP.HCM</p>
+              </div>
+            </Card>
+
+            <Card className="border-2 border-gray-100 hover:border-blue-200 transition-all">
+              <div className="p-6 text-center">
+                <div className="w-12 h-12 bg-green-50 rounded-full flex items-center justify-center mx-auto mb-4">
+                  <Zap className="w-6 h-6 text-green-600" />
+                </div>
+                <h3 className="font-bold text-lg mb-2">Kết nối nhanh chóng</h3>
+                <p className="text-gray-600 text-sm">Tìm thợ gần nhất trong vòng 5km từ vị trí của bạn</p>
+              </div>
+            </Card>
+
+            <Card className="border-2 border-gray-100 hover:border-blue-200 transition-all">
+              <div className="p-6 text-center">
+                <div className="w-12 h-12 bg-amber-50 rounded-full flex items-center justify-center mx-auto mb-4">
+                  <Shield className="w-6 h-6 text-amber-600" />
+                </div>
+                <h3 className="font-bold text-lg mb-2">Thợ được xác minh</h3>
+                <p className="text-gray-600 text-sm">100% thợ được kiểm tra hồ sơ và kỹ năng chuyên môn</p>
+              </div>
+            </Card>
           </div>
         </div>
       </section>
