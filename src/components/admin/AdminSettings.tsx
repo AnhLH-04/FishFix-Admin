@@ -1,4 +1,4 @@
-import { Settings, DollarSign, Key, Mail, Palette, Shield, Users } from 'lucide-react';
+import { Settings, DollarSign, Key, Mail, Palette, Shield, Users, Badge } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '../ui/card';
 import { Input } from '../ui/input';
 import { Button } from '../ui/button';
@@ -233,6 +233,13 @@ export function AdminSettings() {
                 <div>
                   <p className="font-medium">Chatbot tư vấn</p>
                   <p className="text-sm text-gray-500">AI trả lời câu hỏi khách hàng</p>
+                </div>
+                <Switch defaultChecked />
+              </div>
+              <div className="flex items-center justify-between py-3">
+                <div>
+                  <p className="font-medium">Enable GPT-5 for all clients</p>
+                  <p className="text-sm text-gray-500">Upgrade all clients to use GPT-5 model</p>
                 </div>
                 <Switch defaultChecked />
               </div>
