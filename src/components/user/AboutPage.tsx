@@ -92,7 +92,7 @@ export function AboutPage() {
   ];
 
   const milestones = [
-    { year: '2025', event: 'FishFix ra mắt tại Hà Nội và TP.HCM', icon: Building2 },
+    { year: '2025', event: 'FishFix ra mắt lần đầu tiên tại TP.HCM', icon: Building2 },
     { year: '2025', event: 'Đạt 1,000 khách hàng đầu tiên', icon: Users },
     { year: '2025', event: 'Ra mắt tính năng AI Tư vấn miễn phí', icon: Sparkles },
     { year: '2026', event: 'Mở rộng ra 10 tỉnh thành trên cả nước', icon: TrendingUp },
