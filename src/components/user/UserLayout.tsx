@@ -156,7 +156,7 @@ export function UserLayout() {
                 <div className="bg-gradient-to-br from-blue-600 to-indigo-700 p-2.5 rounded-xl shadow-lg">
                   <Wrench className="h-6 w-6" />
                 </div>
-                <h3 className="text-xl font-bold">Kết Nối Thợ</h3>
+                <h3 className="text-xl font-bold">FishFix</h3>
               </div>
               <p className="text-gray-400 text-sm leading-relaxed mb-6">
                 Nền tảng kết nối khách hàng với các thợ sửa chữa chuyên nghiệp, uy tín trên toàn quốc.
@@ -227,7 +227,7 @@ export function UserLayout() {
           </div>
 
           <div className="border-t border-gray-800 mt-12 pt-8 text-center">
-            <p className="text-gray-400 text-sm">&copy; 2026 Kết Nối Thợ. Tất cả quyền được bảo lưu.</p>
+            <p className="text-gray-400 text-sm">&copy; 2026 FishFix. All rights reserved.</p>
           </div>
         </div>
       </footer>
