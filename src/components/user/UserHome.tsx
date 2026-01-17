@@ -138,10 +138,10 @@ export function UserHome() {
                   </span>
                 </div>
                 <h1 className="text-5xl md:text-6xl lg:text-7xl font-black leading-tight text-gray-900">
-                  Sửa chữa gia đình
+                  Sửa chữa nhanh chóng
                   <br />
                   <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-600 via-blue-500 to-cyan-600">
-                    nhanh như gọi Grab
+                  Thợ giỏi tận tâm
                   </span>
                 </h1>
               </div>
