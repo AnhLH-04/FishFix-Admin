@@ -11,16 +11,46 @@ import {
   MapPin,
   Facebook,
   Twitter,
-  Instagram
+  Instagram,
+  User,
+  LogOut
 } from 'lucide-react';
 import { Sheet, SheetContent, SheetTrigger } from '../ui/sheet';
+import { 
+  DropdownMenu, 
+  DropdownMenuContent, 
+  DropdownMenuItem, 
+  DropdownMenuLabel, 
+  DropdownMenuSeparator, 
+  DropdownMenuTrigger 
+} from '../ui/dropdown-menu';
+import { Avatar, AvatarFallback } from '../ui/avatar';
 import logoWhite from '../../assets/logowhite.png';
 import { useState, useEffect } from 'react';
+import { useAuth } from '../../contexts/AuthContext';
+import { useNavigate } from 'react-router-dom';
+import { toast } from 'sonner';
 
 export function UserLayout() {
   const location = useLocation();
+  const navigate = useNavigate();
+  const { user, isAuthenticated, logout } = useAuth();
   const [isVisible, setIsVisible] = useState(true);
   const [lastScrollY, setLastScrollY] = useState(0);
+
+  const handleLogout = () => {
+    logout();
+    navigate('/');
+  };
+
+  const handleBookingClick = () => {
+    if (!isAuthenticated) {
+      toast.error('Vui lòng đăng nhập để đặt lịch!');
+      navigate('/admin/login');
+    } else {
+      navigate('/booking');
+    }
+  };
 
   useEffect(() => {
     const handleScroll = () => {
@@ -121,17 +151,63 @@ export function UserLayout() {
 
             {/* Action Buttons (Desktop) */}
             <div className="hidden lg:flex items-center gap-3">
-              <Link to="/admin/login">
-                <Button variant="outline" size="sm" className="hover:bg-gray-50 transition-all duration-200">
-                  Đăng Nhập
-                </Button>
-              </Link>
-              <Link to="/booking">
-                <Button size="sm" className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 shadow-md hover:shadow-lg transition-all duration-200">
-                  <Calendar className="mr-2 h-4 w-4" />
-                  Đặt Lịch Ngay
-                </Button>
-              </Link>
+              {isAuthenticated ? (
+                <>
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button variant="ghost" className="flex items-center gap-2">
+                        <Avatar className="h-8 w-8">
+                          <AvatarFallback>
+                            {user?.fullName ? user.fullName.split(' ').map(n => n[0]).join('') : 'U'}
+                          </AvatarFallback>
+                        </Avatar>
+                        <span className="max-w-[100px] truncate">{user?.fullName}</span>
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end" className="w-56">
+                      <DropdownMenuLabel>Tài khoản của tôi</DropdownMenuLabel>
+                      <DropdownMenuSeparator />
+                      <DropdownMenuItem onClick={() => navigate('/profile')}>
+                        <User className="mr-2 h-4 w-4" />
+                        Hồ sơ
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => navigate('/orders')}>
+                        <Calendar className="mr-2 h-4 w-4" />
+                        Đơn hàng
+                      </DropdownMenuItem>
+                      <DropdownMenuSeparator />
+                      <DropdownMenuItem onClick={handleLogout}>
+                        <LogOut className="mr-2 h-4 w-4" />
+                        Đăng xuất
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                  <Button 
+                    onClick={handleBookingClick}
+                    size="sm" 
+                    className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 shadow-md hover:shadow-lg transition-all duration-200"
+                  >
+                    <Calendar className="mr-2 h-4 w-4" />
+                    Đặt Lịch Ngay
+                  </Button>
+                </>
+              ) : (
+                <>
+                  <Link to="/admin/login">
+                    <Button variant="outline" size="sm" className="hover:bg-gray-50 transition-all duration-200">
+                      Đăng Nhập
+                    </Button>
+                  </Link>
+                  <Button 
+                    onClick={handleBookingClick}
+                    size="sm" 
+                    className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 shadow-md hover:shadow-lg transition-all duration-200"
+                  >
+                    <Calendar className="mr-2 h-4 w-4" />
+                    Đặt Lịch Ngay
+                  </Button>
+                </>
+              )}
             </div>
           </div>
         </div>
