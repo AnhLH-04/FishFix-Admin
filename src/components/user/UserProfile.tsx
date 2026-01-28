@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '../ui/card';
 import { Button } from '../ui/button';
 import { Input } from '../ui/input';
@@ -6,18 +6,35 @@ import { Label } from '../ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../ui/tabs';
 import { Avatar, AvatarFallback, AvatarImage } from '../ui/avatar';
 import { Badge } from '../ui/badge';
-import { User, Mail, Phone, MapPin, Lock, Bell, CreditCard, History } from 'lucide-react';
+import { User, Mail, Phone, MapPin, Lock, Bell, History } from 'lucide-react';
 import { Switch } from '../ui/switch';
 import { toast } from 'sonner';
+import { useAuth } from '../../contexts/AuthContext';
+import { authApi } from '../../services/api';
 
 export function UserProfile() {
+  const { user, refreshUser } = useAuth();
+  const [isLoading, setIsLoading] = useState(false);
+  
   const [userData, setUserData] = useState({
-    name: 'Nguyễn Văn A',
-    email: 'nguyenvana@email.com',
-    phone: '0912345678',
-    address: '123 Đường ABC, Quận 1, TP.HCM',
+    fullName: '',
+    email: '',
+    phone: '',
+    address: '',
     avatar: ''
   });
+
+  useEffect(() => {
+    if (user) {
+      setUserData({
+        fullName: user.fullName || '',
+        email: user.email || '',
+        phone: user.phone || '',
+        address: '',
+        avatar: ''
+      });
+    }
+  }, [user]);
 
   const [notifications, setNotifications] = useState({
     email: true,
@@ -26,12 +43,30 @@ export function UserProfile() {
     promotions: true
   });
 
-  const handleUpdateProfile = () => {
-    toast.success('Cập nhật thông tin thành công!');
+  const handleUpdateProfile = async () => {
+    if (!userData.fullName || !userData.phone) {
+      toast.error('Vui lòng điền đầy đủ thông tin!');
+      return;
+    }
+
+    setIsLoading(true);
+    try {
+      await authApi.updateProfile({
+        fullName: userData.fullName,
+        phone: userData.phone
+      });
+      await refreshUser();
+      toast.success('Cập nhật thông tin thành công!');
+    } catch (error: any) {
+      const errorMessage = error.response?.data?.message || 'Cập nhật thất bại!';
+      toast.error(errorMessage);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const handleChangePassword = () => {
-    toast.success('Đổi mật khẩu thành công!');
+    toast.info('Chức năng đổi mật khẩu đang được phát triển!');
   };
 
   const recentOrders = [
@@ -47,41 +82,58 @@ export function UserProfile() {
         <p className="text-gray-600 text-lg">Quản lý thông tin cá nhân và cài đặt tài khoản</p>
       </div>
 
-      <div className="grid lg:grid-cols-3 gap-6">
-        {/* Sidebar */}
-        <div className="lg:col-span-1">
-          <Card>
-            <CardHeader className="text-center">
-              <Avatar className="h-24 w-24 mx-auto mb-4">
-                <AvatarImage src={userData.avatar} />
-                <AvatarFallback className="text-2xl">
-                  {userData.name.split(' ').map(n => n[0]).join('')}
-                </AvatarFallback>
-              </Avatar>
-              <CardTitle>{userData.name}</CardTitle>
-              <CardDescription>{userData.email}</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="flex items-center justify-between text-sm">
-                <span className="text-gray-600">Thành viên từ:</span>
-                <span className="font-semibold">Tháng 1, 2026</span>
-              </div>
-              <div className="flex items-center justify-between text-sm">
-                <span className="text-gray-600">Tổng đơn hàng:</span>
-                <Badge variant="secondary">15</Badge>
-              </div>
-              <div className="flex items-center justify-between text-sm">
-                <span className="text-gray-600">Trạng thái:</span>
-                <Badge className="bg-green-500">Đang hoạt động</Badge>
-              </div>
-            </CardContent>
-            <CardFooter>
-              <Button variant="outline" className="w-full">
-                Thay Đổi Ảnh Đại Diện
-              </Button>
-            </CardFooter>
-          </Card>
+      {!user ? (
+        <div className="flex items-center justify-center min-h-[400px]">
+          <div className="text-center">
+            <div className="w-16 h-16 border-4 border-blue-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+            <p className="text-gray-600">Đang tải thông tin...</p>
+          </div>
         </div>
+      ) : (
+        <div className="grid lg:grid-cols-3 gap-6">
+          {/* Sidebar */}
+          <div className="lg:col-span-1">
+            <Card>
+              <CardHeader className="text-center">
+                <Avatar className="h-24 w-24 mx-auto mb-4">
+                  <AvatarImage src={userData.avatar} />
+                  <AvatarFallback className="text-2xl bg-gradient-to-br from-blue-500 to-purple-500 text-white">
+                    {userData.fullName ? userData.fullName.split(' ').map(n => n[0]).join('') : 'U'}
+                  </AvatarFallback>
+                </Avatar>
+                <CardTitle>{userData.fullName || 'Người dùng'}</CardTitle>
+                <CardDescription>{userData.email}</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="flex items-center justify-between text-sm">
+                  <span className="text-gray-600">ID Người dùng:</span>
+                  <Badge variant="secondary" className="font-mono text-xs">
+                    {user.userId.substring(0, 8)}...
+                  </Badge>
+                </div>
+                <div className="flex items-center justify-between text-sm">
+                  <span className="text-gray-600">Vai trò:</span>
+                  <Badge className="bg-blue-500">
+                    {user.roleId === 1 ? 'Khách hàng' : user.roleId === 2 ? 'Thợ sửa chữa' : 'Người dùng'}
+                  </Badge>
+                </div>
+                <div className="flex items-center justify-between text-sm">
+                  <span className="text-gray-600">Số điện thoại:</span>
+                  <span className="font-semibold">{userData.phone || 'Chưa cập nhật'}</span>
+                </div>
+                <div className="flex items-center justify-between text-sm">
+                  <span className="text-gray-600">Trạng thái:</span>
+                  <Badge className="bg-green-500">Đang hoạt động</Badge>
+                </div>
+              </CardContent>
+              <CardFooter>
+                <Button variant="outline" className="w-full" disabled>
+                  Thay Đổi Ảnh Đại Diện
+                  <span className="ml-2 text-xs text-gray-500">(Sắp có)</span>
+                </Button>
+              </CardFooter>
+            </Card>
+          </div>
 
         {/* Main Content */}
         <div className="lg:col-span-2">
@@ -108,8 +160,8 @@ export function UserProfile() {
                     </Label>
                     <Input
                       id="name"
-                      value={userData.name}
-                      onChange={(e) => setUserData({ ...userData, name: e.target.value })}
+                      value={userData.fullName}
+                      onChange={(e) => setUserData({ ...userData, fullName: e.target.value })}
                     />
                   </div>
                   <div>
@@ -121,8 +173,10 @@ export function UserProfile() {
                       id="email"
                       type="email"
                       value={userData.email}
-                      onChange={(e) => setUserData({ ...userData, email: e.target.value })}
+                      disabled
+                      className="bg-gray-50"
                     />
+                    <p className="text-xs text-gray-500 mt-1">Email không thể thay đổi</p>
                   </div>
                   <div>
                     <Label htmlFor="phone">
@@ -149,7 +203,9 @@ export function UserProfile() {
                   </div>
                 </CardContent>
                 <CardFooter>
-                  <Button onClick={handleUpdateProfile}>Cập Nhật Thông Tin</Button>
+                  <Button onClick={handleUpdateProfile} disabled={isLoading}>
+                    {isLoading ? 'Đang cập nhật...' : 'Cập Nhật Thông Tin'}
+                  </Button>
                 </CardFooter>
               </Card>
             </TabsContent>
@@ -295,6 +351,7 @@ export function UserProfile() {
           </Tabs>
         </div>
       </div>
+      )}
     </div>
   );
 }

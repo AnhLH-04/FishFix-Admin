@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { useSearchParams, useNavigate } from 'react-router-dom';
+import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '../ui/card';
 import { Button } from '../ui/button';
 import { Input } from '../ui/input';
@@ -12,11 +12,13 @@ import { format } from 'date-fns';
 import { vi } from 'date-fns/locale';
 import { CalendarIcon, Clock, MapPin, Phone, User } from 'lucide-react';
 import { toast } from 'sonner';
+import { useAuth } from '../../contexts/AuthContext';
+import { bookingApi } from '../../services/api';
 
 export function UserBooking() {
-  // const [searchParams] = useSearchParams();
+  const { user } = useAuth();
   const navigate = useNavigate();
-  // const technicianId = searchParams.get('technicianId');
+  const [isLoading, setIsLoading] = useState(false);
   
   const [date, setDate] = useState<Date>();
   const [formData, setFormData] = useState({
@@ -27,6 +29,17 @@ export function UserBooking() {
     timeSlot: '',
     description: ''
   });
+
+  // Pre-fill user data if logged in
+  useEffect(() => {
+    if (user) {
+      setFormData(prev => ({
+        ...prev,
+        name: user.fullName || '',
+        phone: user.phone || ''
+      }));
+    }
+  }, [user]);
 
   const services = [
     { value: 'electric', label: 'Sửa Điện' },
@@ -51,7 +64,7 @@ export function UserBooking() {
     '17:00 - 18:00'
   ];
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
     if (!date) {
@@ -64,11 +77,28 @@ export function UserBooking() {
       return;
     }
 
-    // Simulate booking
-    toast.success('Đặt lịch thành công! Thợ sẽ liên hệ bạn sớm.');
-    setTimeout(() => {
-      navigate('/orders');
-    }, 2000);
+    setIsLoading(true);
+    try {
+      // Create booking description
+      const bookingDescription = `${formData.description}\n\nDịch vụ: ${services.find(s => s.value === formData.service)?.label}\nNgày: ${format(date, 'PPP', { locale: vi })}\nGiờ: ${formData.timeSlot}\nĐịa chỉ: ${formData.address}`;
+      
+      const bookingId = await bookingApi.createBooking({
+        customerName: formData.name,
+        description: bookingDescription
+      });
+
+      toast.success('Đặt lịch thành công! Thợ sẽ liên hệ bạn sớm.');
+      console.log('Booking ID:', bookingId);
+      
+      setTimeout(() => {
+        navigate('/orders');
+      }, 2000);
+    } catch (error: any) {
+      const errorMessage = error.response?.data?.message || 'Đặt lịch thất bại!';
+      toast.error(errorMessage);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const handleInputChange = (field: string, value: string) => {
@@ -223,11 +253,11 @@ export function UserBooking() {
           </CardContent>
 
           <CardFooter className="flex gap-4">
-            <Button type="button" variant="outline" onClick={() => navigate(-1)} className="flex-1">
+            <Button type="button" variant="outline" onClick={() => navigate(-1)} className="flex-1" disabled={isLoading}>
               Quay Lại
             </Button>
-            <Button type="submit" className="flex-1">
-              Xác Nhận Đặt Lịch
+            <Button type="submit" className="flex-1" disabled={isLoading}>
+              {isLoading ? 'Đang xử lý...' : 'Xác Nhận Đặt Lịch'}
             </Button>
           </CardFooter>
         </form>

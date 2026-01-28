@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation, Link } from 'react-router-dom';
 import { Lock, Mail, ArrowRight, Eye, EyeOff } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../ui/card';
 import { Input } from '../ui/input';
@@ -7,25 +7,41 @@ import { Button } from '../ui/button';
 import { Label } from '../ui/label';
 import { Checkbox } from '../ui/checkbox';
 import Logo from '../../assets/logowhite.png';
+import { useAuth } from '../../contexts/AuthContext';
 
 export function AdminLogin() {
   const navigate = useNavigate();
-  const [email, setEmail] = useState('');
+  const location = useLocation();
+  const { login } = useAuth();
+  const [identifier, setIdentifier] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [rememberMe, setRememberMe] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
 
-  const handleLogin = (e: React.FormEvent) => {
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
 
-    // Simulate login
-    setTimeout(() => {
+    try {
+      const userData = await login(identifier, password);
+      
+      // Check role and redirect accordingly
+      // roleId 3 = Admin, others = regular users
+      if (userData.roleId === 3) {
+        // Admin user - redirect to admin dashboard
+        navigate('/admin', { replace: true });
+      } else {
+        // Regular user - redirect to home or intended page
+        const from = (location.state as any)?.from?.pathname || '/';
+        navigate(from, { replace: true });
+      }
+    } catch (error) {
+      // Error is already handled in the auth context
+      console.error('Login error:', error);
+    } finally {
       setIsLoading(false);
-      // In production, you would verify credentials here
-      navigate('/admin');
-    }, 1000);
+    }
   };
 
   return (
@@ -61,19 +77,19 @@ export function AdminLogin() {
 
         <CardContent>
           <form onSubmit={handleLogin} className="space-y-5">
-            {/* Email */}
+            {/* Email or Phone */}
             <div className="space-y-2">
-              <Label htmlFor="email" className="text-sm font-medium">
-                Email
+              <Label htmlFor="identifier" className="text-sm font-medium">
+                Email hoặc Số điện thoại
               </Label>
               <div className="relative">
                 <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
                 <Input
-                  id="email"
-                  type="email"
-                  placeholder="admin@FishFix.vn"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
+                  id="identifier"
+                  type="text"
+                  placeholder="admin@FishFix.vn hoặc 0123456789"
+                  value={identifier}
+                  onChange={(e) => setIdentifier(e.target.value)}
                   className="pl-10 h-11 bg-gray-50 border-gray-200 focus:bg-white transition-colors"
                   required
                 />
@@ -125,12 +141,12 @@ export function AdminLogin() {
                   Ghi nhớ đăng nhập
                 </label>
               </div>
-              <button
-                type="button"
+              <Link
+                to="/forgot-password"
                 className="text-sm text-[#007BFF] hover:underline"
               >
                 Quên mật khẩu?
-              </button>
+              </Link>
             </div>
 
             {/* Submit Button */}
@@ -157,13 +173,27 @@ export function AdminLogin() {
           <div className="mt-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
             <p className="text-xs text-gray-600 mb-2">🔐 Demo credentials:</p>
             <div className="text-xs text-gray-700 space-y-1">
-              <p><span className="font-medium">Email:</span> admin@FishFix.vn</p>
-              <p><span className="font-medium">Password:</span> admin123</p>
+              <p><span className="font-medium">Email:</span> demo@fishfix.local</p>
+              <p><span className="font-medium">Password:</span> P@ssw0rd!</p>
             </div>
           </div>
 
-          {/* Footer */}
+          {/* Register Link */}
           <div className="mt-6 text-center">
+            <p className="text-sm text-gray-600">
+              Chưa có tài khoản?{' '}
+              <button
+                type="button"
+                onClick={() => navigate('/register')}
+                className="text-[#007BFF] hover:underline font-medium"
+              >
+                Đăng ký ngay
+              </button>
+            </p>
+          </div>
+
+          {/* Footer */}
+          <div className="mt-4 text-center">
             <p className="text-xs text-gray-500">
               © 2025 FishFix. Bảo mật và riêng tư.
             </p>
