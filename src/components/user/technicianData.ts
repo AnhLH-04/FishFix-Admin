@@ -1,5 +1,4 @@
 // src/components/user/technicianData.ts
-
 import type { ServiceCategoryId } from "./serviceData";
 
 export type Technician = {
@@ -10,8 +9,10 @@ export type Technician = {
   jobsDone: number;
   distanceKm: number;
   available: boolean;
+
   // ✅ đồng bộ theo serviceData
   services: ServiceCategoryId[];
+
   avatarUrl?: string;
 };
 
@@ -27,6 +28,11 @@ export const serviceCategoryLabels: Record<ServiceCategoryId, string> = {
   cleaning: "Vệ sinh",
 };
 
+// ✅ runtime guard (tránh cast bừa rồi lỗi)
+export function isServiceCategoryId(value: string): value is ServiceCategoryId {
+  return Object.prototype.hasOwnProperty.call(serviceCategoryLabels, value);
+}
+
 export const technicians: Technician[] = [
   {
     id: "T001",
@@ -37,6 +43,7 @@ export const technicians: Technician[] = [
     distanceKm: 2.1,
     available: true,
     services: ["electric", "electronics"],
+    avatarUrl: "https://images.unsplash.com/photo-1520975958225-21c0f7c4c0a2?auto=format&fit=crop&w=300&q=80",
   },
   {
     id: "T002",
@@ -47,6 +54,7 @@ export const technicians: Technician[] = [
     distanceKm: 3.7,
     available: false,
     services: ["plumbing", "cleaning"],
+    avatarUrl: "https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?auto=format&fit=crop&w=300&q=80",
   },
   {
     id: "T003",
@@ -57,6 +65,7 @@ export const technicians: Technician[] = [
     distanceKm: 4.4,
     available: true,
     services: ["hvac", "electric"],
+    avatarUrl: "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&w=300&q=80",
   },
   {
     id: "T004",
@@ -67,6 +76,7 @@ export const technicians: Technician[] = [
     distanceKm: 1.9,
     available: true,
     services: ["woodwork", "painting"],
+    avatarUrl: "https://images.unsplash.com/photo-1544723795-3fb6469f5b39?auto=format&fit=crop&w=300&q=80",
   },
   {
     id: "T005",
@@ -77,18 +87,35 @@ export const technicians: Technician[] = [
     distanceKm: 6.2,
     available: false,
     services: ["plumbing", "hvac", "vehicle"],
+    avatarUrl: "https://images.unsplash.com/photo-1527980965255-d3b416303d12?auto=format&fit=crop&w=300&q=80",
   },
 ];
 
 export function getTechniciansForService(service?: string) {
-  if (!service || service === "all") return technicians;
+  if (!service) return technicians;
 
-  const s = service.toLowerCase().trim() as ServiceCategoryId;
+  const s = service.trim().toLowerCase();
+
+  // ✅ hỗ trợ query "all"
+  if (s === "all") return technicians;
+
+  // ✅ chỉ filter nếu đúng key
+  if (!isServiceCategoryId(s)) return technicians;
+
   return technicians.filter((t) => t.services.includes(s));
 }
 
 export function labelService(service?: string) {
   if (!service) return "";
-  const key = service.toLowerCase().trim() as ServiceCategoryId;
-  return serviceCategoryLabels[key] ?? service;
+
+  const s = service.trim().toLowerCase();
+
+  // ✅ tránh in "all"
+  if (s === "all") return "Tất cả";
+
+  // ✅ nếu đúng key thì map label
+  if (isServiceCategoryId(s)) return serviceCategoryLabels[s];
+
+  // ✅ fallback: trả nguyên văn (đỡ crash)
+  return service;
 }

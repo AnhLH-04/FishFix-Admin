@@ -1,78 +1,78 @@
-import { useState } from 'react';
-import { useSearchParams, useNavigate } from 'react-router-dom';
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '../ui/card';
-import { Button } from '../ui/button';
-import { Input } from '../ui/input';
-import { Textarea } from '../ui/textarea';
-import { Label } from '../ui/label';
-import { Calendar } from '../ui/calendar';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
-import { Popover, PopoverContent, PopoverTrigger } from '../ui/popover';
-import { format } from 'date-fns';
-import { vi } from 'date-fns/locale';
-import { CalendarIcon, Clock, MapPin, Phone, User } from 'lucide-react';
-import { toast } from 'sonner';
+import { useState } from "react";
+import { useSearchParams, useNavigate } from "react-router-dom";
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "../ui/card";
+import { Button } from "../ui/button";
+import { Input } from "../ui/input";
+import { Textarea } from "../ui/textarea";
+import { Label } from "../ui/label";
+import { Calendar } from "../ui/calendar";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../ui/select";
+import { Popover, PopoverContent, PopoverTrigger } from "../ui/popover";
+import { format } from "date-fns";
+import { vi } from "date-fns/locale";
+import { CalendarIcon, Clock, MapPin, Phone, User } from "lucide-react";
+import { toast } from "sonner";
 
 export function UserBooking() {
   // const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   // const technicianId = searchParams.get('technicianId');
-  
+
   const [date, setDate] = useState<Date>();
   const [formData, setFormData] = useState({
-    name: '',
-    phone: '',
-    address: '',
-    service: '',
-    timeSlot: '',
-    description: ''
+    name: "",
+    phone: "",
+    address: "",
+    service: "",
+    timeSlot: "",
+    description: "",
   });
 
   const services = [
-    { value: 'electric', label: 'Sửa Điện' },
-    { value: 'plumbing', label: 'Sửa Nước' },
-    { value: 'hvac', label: 'Điều Hòa' },
-    { value: 'painting', label: 'Sơn Nhà' },
-    { value: 'electronics', label: 'Sửa Điện Tử' },
-    { value: 'woodwork', label: 'Mộc & Đồ Gỗ' },
-    { value: 'vehicle', label: 'Sửa Xe' },
-    { value: 'cleaning', label: 'Vệ Sinh' }
+    { value: "electric", label: "Sửa Điện" },
+    { value: "plumbing", label: "Sửa Nước" },
+    { value: "hvac", label: "Điều Hòa" },
+    { value: "painting", label: "Sơn Nhà" },
+    { value: "electronics", label: "Sửa Điện Tử" },
+    { value: "woodwork", label: "Mộc & Đồ Gỗ" },
+    { value: "vehicle", label: "Sửa Xe" },
+    { value: "cleaning", label: "Vệ Sinh" },
   ];
 
   const timeSlots = [
-    '08:00 - 09:00',
-    '09:00 - 10:00',
-    '10:00 - 11:00',
-    '11:00 - 12:00',
-    '13:00 - 14:00',
-    '14:00 - 15:00',
-    '15:00 - 16:00',
-    '16:00 - 17:00',
-    '17:00 - 18:00'
+    "08:00 - 09:00",
+    "09:00 - 10:00",
+    "10:00 - 11:00",
+    "11:00 - 12:00",
+    "13:00 - 14:00",
+    "14:00 - 15:00",
+    "15:00 - 16:00",
+    "16:00 - 17:00",
+    "17:00 - 18:00",
   ];
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (!date) {
-      toast.error('Vui lòng chọn ngày');
+      toast.error("Vui lòng chọn ngày");
       return;
     }
 
     if (!formData.name || !formData.phone || !formData.address || !formData.service || !formData.timeSlot) {
-      toast.error('Vui lòng điền đầy đủ thông tin');
+      toast.error("Vui lòng điền đầy đủ thông tin");
       return;
     }
 
     // Simulate booking
-    toast.success('Đặt lịch thành công! Thợ sẽ liên hệ bạn sớm.');
+    toast.success("Đặt lịch thành công! Thợ sẽ liên hệ bạn sớm.");
     setTimeout(() => {
-      navigate('/orders');
+      navigate("/orders");
     }, 2000);
   };
 
   const handleInputChange = (field: string, value: string) => {
-    setFormData(prev => ({ ...prev, [field]: value }));
+    setFormData((prev) => ({ ...prev, [field]: value }));
   };
 
   return (
@@ -90,7 +90,7 @@ export function UserBooking() {
               Vui lòng điền đầy đủ thông tin để thợ có thể liên hệ và phục vụ bạn tốt nhất
             </CardDescription>
           </CardHeader>
-          
+
           <CardContent className="space-y-6">
             {/* Personal Info */}
             <div className="space-y-4">
@@ -103,7 +103,7 @@ export function UserBooking() {
                   id="name"
                   placeholder="Nguyễn Văn A"
                   value={formData.name}
-                  onChange={(e) => handleInputChange('name', e.target.value)}
+                  onChange={(e) => handleInputChange("name", e.target.value)}
                   required
                 />
               </div>
@@ -118,7 +118,7 @@ export function UserBooking() {
                   type="tel"
                   placeholder="0912345678"
                   value={formData.phone}
-                  onChange={(e) => handleInputChange('phone', e.target.value)}
+                  onChange={(e) => handleInputChange("phone", e.target.value)}
                   required
                 />
               </div>
@@ -132,7 +132,7 @@ export function UserBooking() {
                   id="address"
                   placeholder="123 Đường ABC, Phường XYZ, Quận 1, TP.HCM"
                   value={formData.address}
-                  onChange={(e) => handleInputChange('address', e.target.value)}
+                  onChange={(e) => handleInputChange("address", e.target.value)}
                   required
                 />
               </div>
@@ -142,7 +142,7 @@ export function UserBooking() {
             <div className="space-y-4">
               <div>
                 <Label htmlFor="service">Dịch vụ cần sửa *</Label>
-                <Select value={formData.service} onValueChange={(value: string) => handleInputChange('service', value)}>
+                <Select value={formData.service} onValueChange={(value: string) => handleInputChange("service", value)}>
                   <SelectTrigger>
                     <SelectValue placeholder="Chọn dịch vụ" />
                   </SelectTrigger>
@@ -160,12 +160,9 @@ export function UserBooking() {
                 <Label>Ngày làm việc *</Label>
                 <Popover>
                   <PopoverTrigger asChild>
-                    <Button
-                      variant="outline"
-                      className="w-full justify-start text-left font-normal"
-                    >
+                    <Button variant="outline" className="w-full justify-start text-left font-normal">
                       <CalendarIcon className="mr-2 h-4 w-4" />
-                      {date ? format(date, 'PPP', { locale: vi }) : 'Chọn ngày'}
+                      {date ? format(date, "PPP", { locale: vi }) : "Chọn ngày"}
                     </Button>
                   </PopoverTrigger>
                   <PopoverContent className="w-auto p-0">
@@ -185,7 +182,10 @@ export function UserBooking() {
                   <Clock className="inline h-4 w-4 mr-2" />
                   Khung giờ *
                 </Label>
-                <Select value={formData.timeSlot} onValueChange={(value: string) => handleInputChange('timeSlot', value)}>
+                <Select
+                  value={formData.timeSlot}
+                  onValueChange={(value: string) => handleInputChange("timeSlot", value)}
+                >
                   <SelectTrigger>
                     <SelectValue placeholder="Chọn khung giờ" />
                   </SelectTrigger>
@@ -205,7 +205,7 @@ export function UserBooking() {
                   id="description"
                   placeholder="Mô tả vấn đề cần sửa chữa..."
                   value={formData.description}
-                  onChange={(e) => handleInputChange('description', e.target.value)}
+                  onChange={(e) => handleInputChange("description", e.target.value)}
                   rows={4}
                 />
               </div>
