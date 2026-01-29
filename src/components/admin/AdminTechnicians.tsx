@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Search, CheckCircle, XCircle, Eye, Star, MapPin, Award } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '../ui/card';
 import { Input } from '../ui/input';
@@ -91,6 +92,7 @@ const pendingTechnicians = [
 ];
 
 export function AdminTechnicians() {
+  const navigate = useNavigate();
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedTech, setSelectedTech] = useState<typeof technicians[0] | null>(null);
   const [selectedPending, setSelectedPending] = useState<typeof pendingTechnicians[0] | null>(null);
@@ -145,7 +147,7 @@ export function AdminTechnicians() {
             </div>
           </CardContent>
         </Card>
-        
+
         <Card className="border-0 shadow-lg bg-gradient-to-br from-orange-50 to-amber-50">
           <CardContent className="p-6">
             <div className="flex items-center justify-between">
@@ -289,7 +291,7 @@ export function AdminTechnicians() {
                         <Button
                           variant="ghost"
                           size="sm"
-                          onClick={() => setSelectedTech(tech)}
+                          onClick={() => navigate(`/admin/technicians/${tech.id}`)}
                         >
                           <Eye className="w-4 h-4" />
                         </Button>
@@ -414,7 +416,7 @@ export function AdminTechnicians() {
                   {getStatusBadge(selectedTech.status)}
                 </div>
               </div>
-              
+
               <div className="border-t pt-4">
                 <h4 className="font-medium mb-4">Thống kê hiệu suất</h4>
                 <div className="grid grid-cols-3 gap-4">

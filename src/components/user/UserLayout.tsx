@@ -1,10 +1,10 @@
 import { Link, Outlet, useLocation } from 'react-router-dom';
 import { Button } from '../ui/button';
-import { 
-  Home, 
-  Wrench, 
-  Users, 
-  Calendar, 
+import {
+  Home,
+  Wrench,
+  Users,
+  Calendar,
   Menu,
   Phone,
   Mail,
@@ -13,16 +13,17 @@ import {
   Twitter,
   Instagram,
   User,
-  LogOut
+  LogOut,
+  Briefcase
 } from 'lucide-react';
 import { Sheet, SheetContent, SheetTrigger } from '../ui/sheet';
-import { 
-  DropdownMenu, 
-  DropdownMenuContent, 
-  DropdownMenuItem, 
-  DropdownMenuLabel, 
-  DropdownMenuSeparator, 
-  DropdownMenuTrigger 
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger
 } from '../ui/dropdown-menu';
 import { Avatar, AvatarFallback } from '../ui/avatar';
 import logoWhite from '../../assets/logowhite.png';
@@ -55,7 +56,7 @@ export function UserLayout() {
   useEffect(() => {
     const handleScroll = () => {
       const currentScrollY = window.scrollY;
-      
+
       if (currentScrollY < 10) {
         // Always show nav at top
         setIsVisible(true);
@@ -66,12 +67,12 @@ export function UserLayout() {
         // Scrolling up - show nav
         setIsVisible(true);
       }
-      
+
       setLastScrollY(currentScrollY);
     };
 
     window.addEventListener('scroll', handleScroll, { passive: true });
-    
+
     return () => window.removeEventListener('scroll', handleScroll);
   }, [lastScrollY]);
 
@@ -97,11 +98,10 @@ export function UserLayout() {
           <Link
             key={item.path}
             to={item.path}
-            className={`flex items-center gap-2 px-4 py-2.5 rounded-xl transition-all duration-200 font-medium ${
-              isActive
+            className={`flex items-center gap-2 px-4 py-2.5 rounded-xl transition-all duration-200 font-medium ${isActive
                 ? 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-lg'
                 : 'hover:bg-gray-100 text-gray-700 hover:text-blue-600'
-            } ${mobile ? 'w-full' : ''}`}
+              } ${mobile ? 'w-full' : ''}`}
           >
             <Icon className="h-5 w-5" />
             <span>{item.label}</span>
@@ -114,10 +114,9 @@ export function UserLayout() {
   return (
     <div className="relative min-h-screen">
       {/* Header */}
-      <header 
-        className={`fixed top-0 left-0 right-0 z-50 bg-white/95 backdrop-blur-sm border-b shadow-md transition-transform duration-300 ease-in-out ${
-          isVisible ? 'translate-y-0' : '-translate-y-full'
-        }`}
+      <header
+        className={`fixed top-0 left-0 right-0 z-50 bg-white/95 backdrop-blur-sm border-b shadow-md transition-transform duration-300 ease-in-out ${isVisible ? 'translate-y-0' : '-translate-y-full'
+          }`}
       >
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-20">
@@ -171,6 +170,12 @@ export function UserLayout() {
                         <User className="mr-2 h-4 w-4" />
                         Hồ sơ
                       </DropdownMenuItem>
+                      {user?.roleId === 2 && (
+                        <DropdownMenuItem onClick={() => navigate('/worker/profile')}>
+                          <Briefcase className="mr-2 h-4 w-4" />
+                          Quản lý thợ
+                        </DropdownMenuItem>
+                      )}
                       <DropdownMenuItem onClick={() => navigate('/orders')}>
                         <Calendar className="mr-2 h-4 w-4" />
                         Đơn hàng
@@ -182,9 +187,9 @@ export function UserLayout() {
                       </DropdownMenuItem>
                     </DropdownMenuContent>
                   </DropdownMenu>
-                  <Button 
+                  <Button
                     onClick={handleBookingClick}
-                    size="sm" 
+                    size="sm"
                     className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 shadow-md hover:shadow-lg transition-all duration-200"
                   >
                     <Calendar className="mr-2 h-4 w-4" />
@@ -198,9 +203,9 @@ export function UserLayout() {
                       Đăng Nhập
                     </Button>
                   </Link>
-                  <Button 
+                  <Button
                     onClick={handleBookingClick}
-                    size="sm" 
+                    size="sm"
                     className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 shadow-md hover:shadow-lg transition-all duration-200"
                   >
                     <Calendar className="mr-2 h-4 w-4" />
