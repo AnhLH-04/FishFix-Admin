@@ -1,18 +1,6 @@
 import { Link, Outlet, useLocation, useNavigate } from "react-router-dom";
 import { Button } from "../ui/button";
-import {
-  Home,
-  Users,
-  Calendar,
-  Menu,
-  Phone,
-  Mail,
-  MapPin,
-  Facebook,
-  Twitter,
-  Instagram,
-  LogOut,
-} from "lucide-react";
+import { Home, Users, Calendar, Menu, Phone, Mail, MapPin, Facebook, Twitter, Instagram, LogOut } from "lucide-react";
 import { Sheet, SheetContent, SheetTrigger } from "../ui/sheet";
 import logoWhite from "../../assets/logowhite.png";
 import { useAuth } from "../../auth/AuthProvider";
