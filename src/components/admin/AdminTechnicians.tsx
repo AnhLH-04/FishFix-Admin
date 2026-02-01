@@ -496,6 +496,46 @@ export function AdminTechnicians() {
                   <p className="font-medium">{selectedPending.idCardNumber || 'Chưa cung cấp'}</p>
                 </div>
               </div>
+
+              {/* CCCD Images Section */}
+              <div>
+                <p className="font-medium mb-3">Hình ảnh CCCD</p>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <p className="text-xs text-gray-500 uppercase">Mặt trước</p>
+                    {selectedPending.idCardFrontUrl ? (
+                      <a href={selectedPending.idCardFrontUrl} target="_blank" rel="noreferrer" className="block">
+                        <img
+                          src={selectedPending.idCardFrontUrl}
+                          alt="CCCD Mặt trước"
+                          className="w-full h-40 object-cover rounded-lg border-2 border-gray-200 hover:border-blue-500 transition-colors cursor-pointer"
+                        />
+                      </a>
+                    ) : (
+                      <div className="w-full h-40 bg-gray-100 rounded-lg border-2 border-dashed border-gray-300 flex items-center justify-center text-gray-400 text-sm">
+                        Chưa tải lên
+                      </div>
+                    )}
+                  </div>
+                  <div className="space-y-2">
+                    <p className="text-xs text-gray-500 uppercase">Mặt sau</p>
+                    {selectedPending.idCardBackUrl ? (
+                      <a href={selectedPending.idCardBackUrl} target="_blank" rel="noreferrer" className="block">
+                        <img
+                          src={selectedPending.idCardBackUrl}
+                          alt="CCCD Mặt sau"
+                          className="w-full h-40 object-cover rounded-lg border-2 border-gray-200 hover:border-blue-500 transition-colors cursor-pointer"
+                        />
+                      </a>
+                    ) : (
+                      <div className="w-full h-40 bg-gray-100 rounded-lg border-2 border-dashed border-gray-300 flex items-center justify-center text-gray-400 text-sm">
+                        Chưa tải lên
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+
               <div>
                 <p className="font-medium mb-1">Giới thiệu</p>
                 <div className="bg-white p-3 border rounded-lg text-sm text-gray-600">
