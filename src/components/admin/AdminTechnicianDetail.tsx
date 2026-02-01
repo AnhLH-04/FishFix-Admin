@@ -312,8 +312,18 @@ export function AdminTechnicianDetail() {
                         Quay lại
                     </Button>
                     <div>
-                        <h1 className="text-2xl font-bold">Chi tiết thợ sửa chữa</h1>
+                        <h1 className="text-2xl font-bold">{worker.fullName || 'Chi tiết thợ sửa chữa'}</h1>
                         <p className="text-gray-500">ID: {worker.workerId}</p>
+                        <div className="flex gap-4 mt-2">
+                            <div>
+                                <p className="text-xs text-gray-500">Bán kính</p>
+                                <p className="text-sm mt-1">{worker.workingRadiusKm} km</p>
+                            </div>
+                            <div>
+                                <p className="text-xs text-gray-500">Giá kỳ vọng</p>
+                                <p className="text-sm font-medium text-blue-600 mt-1">{(worker.hourlyRate || 0).toLocaleString()}đ</p>
+                            </div>
+                        </div>
                     </div>
                 </div>
                 <div className="flex gap-2">

@@ -21,6 +21,9 @@ api.interceptors.request.use((config) => {
 export interface WorkerProfile {
     workerId: string;
     userId: string;
+    fullName?: string; // From joined User table
+    phone?: string;    // From joined User table
+    email?: string;    // From joined User table
     bio: string;
     hourlyRate: number;
     serviceFeePercent: number;
@@ -55,14 +58,14 @@ export interface Certification {
     certId: string;
     workerId: string;
     certName: string;
-    certNumber: string;
-    issuedBy: string;
-    issuedDate: string;
-    expiryDate: string;
-    documentUrl: string;
+    certNumber?: string;
+    issuedBy?: string;
+    issuedDate?: string;
+    expiryDate?: string;
+    documentUrl?: string;
     isVerified: boolean;
-    verifiedAt: string | null;
-    isExpired: boolean;
+    verifiedAt?: string | null;
+    isExpired?: boolean;
 }
 
 export interface UpdateWorkerProfileDto {
@@ -128,6 +131,11 @@ export async function verifyWorker(workerId: string): Promise<void> {
     await api.put(`/api/dispatch/workers/${workerId}/verify`);
 }
 
+export async function rejectWorker(workerId: string, reason: string): Promise<void> {
+    // Assumption: Backend adds this for worker rejection too
+    await api.put(`/api/dispatch/workers/${workerId}/reject`, { reason });
+}
+
 // ============ Skills APIs ============
 export async function addWorkerSkill(
     workerId: string,
@@ -173,7 +181,9 @@ export async function verifyCertification(certId: string): Promise<void> {
 
 // ============ List Workers (for Admin) ============
 
-export async function getAllWorkers(): Promise<WorkerProfile[]> {
-    const { data } = await api.get('/api/dispatch/workers');
+export async function getAllWorkers(isVerified?: boolean): Promise<WorkerProfile[]> {
+    const { data } = await api.get('/api/dispatch/workers', {
+        params: isVerified !== undefined ? { isVerified } : {},
+    });
     return data;
 }
