@@ -403,12 +403,12 @@ export function AdminTechnicians() {
 
       {/* Detail Dialog */}
       <Dialog open={!!selectedTech} onOpenChange={() => setSelectedTech(null)}>
-        <DialogContent className="max-w-2xl">
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-hidden flex flex-col">
           <DialogHeader>
             <DialogTitle>Hồ sơ thợ sửa chữa</DialogTitle>
           </DialogHeader>
           {selectedTech && (
-            <div className="space-y-6">
+            <div className="space-y-6 overflow-y-auto pr-2">
               <div className="flex items-center gap-4">
                 <div className="w-16 h-16 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center text-white text-2xl font-bold">
                   {(selectedTech.fullName || 'T').charAt(0)}
@@ -459,13 +459,13 @@ export function AdminTechnicians() {
 
       {/* Pending Detail Dialog */}
       <Dialog open={!!selectedPending} onOpenChange={() => setSelectedPending(null)}>
-        <DialogContent className="max-w-2xl">
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-hidden flex flex-col">
           <DialogHeader>
             <DialogTitle>Đơn đăng ký thợ mới</DialogTitle>
             <DialogDescription>Kiểm tra kỹ thông tin CCCD và chứng chỉ trước khi duyệt</DialogDescription>
           </DialogHeader>
           {selectedPending && (
-            <div className="space-y-6">
+            <div className="space-y-6 overflow-y-auto pr-2">
               <div className="flex items-center gap-4">
                 <div className="w-16 h-16 bg-gradient-to-br from-orange-500 to-orange-600 rounded-full flex items-center justify-center text-white text-2xl font-bold">
                   {(selectedPending.fullName || 'T').charAt(0)}
