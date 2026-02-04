@@ -1,11 +1,7 @@
 import axios, { AxiosError, AxiosInstance } from 'axios';
 
 // Base URL for the API
-// In development, use relative path to leverage Vite proxy (bypass CORS)
-// In production, use env variable or fallback to production URL
-const BASE_URL = import.meta.env.DEV 
-  ? '' // Empty string means relative path, will use Vite proxy
-  : import.meta.env.VITE_API_BASE_URL || 'https://fishfix-backend.onrender.com';
+const BASE_URL = import.meta.env.VITE_API_BASE_URL || 'https://fishfix-backend.onrender.com';
 
 // Create axios instance
 const apiClient: AxiosInstance = axios.create({
@@ -38,7 +34,7 @@ apiClient.interceptors.response.use(
     if (error.code === 'ERR_NETWORK') {
       console.error('Network Error: Unable to connect to server');
     }
-    
+
     // Handle 401 Unauthorized
     if (error.response?.status === 401) {
       // Clear token and redirect to login
@@ -46,7 +42,7 @@ apiClient.interceptors.response.use(
       localStorage.removeItem('user');
       window.location.href = '/admin/login';
     }
-    
+
     return Promise.reject(error);
   }
 );

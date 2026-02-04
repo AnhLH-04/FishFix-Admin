@@ -9,6 +9,7 @@ import { AdminPayments } from './components/admin/AdminPayments';
 import { AdminAI } from './components/admin/AdminAI';
 import { AdminSupport } from './components/admin/AdminSupport';
 import { AdminSettings } from './components/admin/AdminSettings';
+import { AdminTechnicianDetail } from './components/admin/AdminTechnicianDetail';
 import { NotFound } from './components/admin/NotFound';
 import { UserLayout } from './components/user/UserLayout';
 import { UserHome } from './components/user/UserHome';
@@ -18,6 +19,8 @@ import { UserTechnicians } from './components/user/UserTechnicians';
 import { UserBooking } from './components/user/UserBooking';
 import { UserOrders } from './components/user/UserOrders';
 import { UserProfile } from './components/user/UserProfile';
+import { WorkerProfile } from './components/user/WorkerProfile';
+import { WorkerRegistration } from './components/user/WorkerRegistration';
 import { UserAI } from './components/user/UserAI';
 import { UserRegister } from './components/user/UserRegister';
 import { ForgotPassword } from './components/auth/ForgotPassword';
@@ -27,7 +30,7 @@ import { PricingPage } from './components/user/PricingPage';
 import { AboutPage } from './components/user/AboutPage';
 import { ScrollToTop } from './components/ScrollToTop';
 import { UserGuide } from './components/user/UserGuide';
-import { TechnicianGuide } from './components/user/TechnicianGuide'; 
+import { TechnicianGuide } from './components/user/TechnicianGuide';
 import { AuthProvider } from './contexts/AuthContext';
 import { ProtectedRoute } from './components/ProtectedRoute';
 
@@ -48,7 +51,7 @@ export default function App() {
             <Route path="about" element={<AboutPage />} />
             <Route path="customer" element={<UserGuide />} />
             <Route path="technician" element={<TechnicianGuide />} />
-            
+
             {/* Protected Routes - Yêu cầu đăng nhập */}
             <Route path="booking" element={
               <ProtectedRoute>
@@ -63,6 +66,16 @@ export default function App() {
             <Route path="profile" element={
               <ProtectedRoute>
                 <UserProfile />
+              </ProtectedRoute>
+            } />
+            <Route path="worker/profile" element={
+              <ProtectedRoute>
+                <WorkerProfile />
+              </ProtectedRoute>
+            } />
+            <Route path="worker/register" element={
+              <ProtectedRoute>
+                <WorkerRegistration />
               </ProtectedRoute>
             } />
             <Route path="ai" element={
@@ -83,6 +96,7 @@ export default function App() {
             <Route index element={<AdminOverview />} />
             <Route path="customers" element={<AdminCustomers />} />
             <Route path="technicians" element={<AdminTechnicians />} />
+            <Route path="technicians/:workerId" element={<AdminTechnicianDetail />} />
             <Route path="orders" element={<AdminOrders />} />
             <Route path="payments" element={<AdminPayments />} />
             <Route path="ai" element={<AdminAI />} />
