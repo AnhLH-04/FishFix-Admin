@@ -26,6 +26,8 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "../ui/dropdown-menu";
+import { useAuth } from "../../contexts/AuthContext";
+import { useNavigate } from "react-router-dom";
 
 const menuItems = [
   { icon: LayoutDashboard, label: "Dashboard", path: "/admin" },
@@ -61,6 +63,8 @@ const menuItems = [
 export function AdminLayout() {
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const location = useLocation();
+  const { logout } = useAuth();
+  const navigate = useNavigate();
 
   const isActive = (path: string) => {
     if (path === "/admin") {
@@ -68,6 +72,13 @@ export function AdminLayout() {
     }
     return location.pathname.startsWith(path);
   };
+
+  const handleLogout = () => {
+    logout();
+    navigate('/');
+  };
+
+
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-blue-50">
@@ -200,7 +211,7 @@ export function AdminLayout() {
                     <Settings className="w-4 h-4 mr-2" />
                     Cài đặt
                   </DropdownMenuItem>
-                  <DropdownMenuItem>
+                  <DropdownMenuItem onClick={handleLogout}>
                     <LogOut className="w-4 h-4 mr-2" />
                     Đăng xuất
                   </DropdownMenuItem>

@@ -82,6 +82,60 @@ export function UserProfile() {
             </Button>
           </div>
         </div>
+      ) : (
+        <div className="grid lg:grid-cols-3 gap-6">
+          {/* Sidebar */}
+          <div className="lg:col-span-1">
+            <Card>
+              <CardHeader className="text-center">
+                <Avatar className="h-24 w-24 mx-auto mb-4">
+                  <AvatarImage src={userData.avatar} />
+                  <AvatarFallback className="text-2xl bg-gradient-to-br from-blue-500 to-purple-500 text-white">
+                    {userData.fullName ? userData.fullName.split(' ').map(n => n[0]).join('') : 'U'}
+                  </AvatarFallback>
+                </Avatar>
+                <CardTitle>{userData.fullName || 'Người dùng'}</CardTitle>
+                <CardDescription>{userData.email}</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="flex items-center justify-between text-sm">
+                  <span className="text-gray-600">ID Người dùng:</span>
+                  <Badge variant="secondary" className="font-mono text-xs">
+                    {user.userId.substring(0, 8)}...
+                  </Badge>
+                </div>
+                <div className="flex items-center justify-between text-sm">
+                  <span className="text-gray-600">Vai trò:</span>
+                  <Badge className="bg-blue-500">
+                    {user.roleId === 1 ? 'Khách hàng' : user.roleId === 2 ? 'Thợ sửa chữa' : 'Người dùng'}
+                  </Badge>
+                </div>
+                <div className="flex items-center justify-between text-sm">
+                  <span className="text-gray-600">Số điện thoại:</span>
+                  <span className="font-semibold">{userData.phone || 'Chưa cập nhật'}</span>
+                </div>
+                <div className="flex items-center justify-between text-sm">
+                  <span className="text-gray-600">Trạng thái:</span>
+                  <Badge className="bg-green-500">Đang hoạt động</Badge>
+                </div>
+              </CardContent>
+              <CardFooter className="flex flex-col gap-2">
+                {user.roleId === 2 && (
+                  <Button
+                    className="w-full bg-gradient-to-r from-blue-600 to-indigo-600 hover:shadow-lg transition-all"
+                    onClick={() => navigate('/worker/profile')}
+                  >
+                    <Briefcase className="mr-2 h-4 w-4" />
+                    Bảng Điều Khiển Thợ
+                  </Button>
+                )}
+                <Button variant="outline" className="w-full" disabled>
+                  Thay Đổi Ảnh Đại Diện
+                  <span className="ml-2 text-xs text-gray-500">(Sắp có)</span>
+                </Button>
+              </CardFooter>
+            </Card>
+          </div>
 
         <div className="grid lg:grid-cols-3 gap-6">
           {/* Sidebar */}
@@ -307,7 +361,7 @@ export function UserProfile() {
             </Tabs>
           </div>
         </div>
-      </div>
+      )}
     </div>
   );
 }

@@ -48,10 +48,13 @@ export function UserLayout() {
   const displayName = me?.fullName || me?.email || me?.phone || "Tài khoản";
 
   return (
-    <div className="flex flex-col min-h-screen">
+    <div className="relative min-h-screen">
       {/* Header */}
-      <header className="sticky top-0 z-50 bg-white/95 backdrop-blur-sm border-b shadow-md">
-        <div className="container mx-auto px-4">
+      <header
+        className={`fixed top-0 left-0 right-0 z-50 bg-white/95 backdrop-blur-sm border-b shadow-md transition-transform duration-300 ease-in-out ${isVisible ? 'translate-y-0' : '-translate-y-full'
+          }`}
+      >
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-20">
             {/* Logo */}
             <Link to="/" className="flex items-center gap-3 group">
@@ -167,8 +170,11 @@ export function UserLayout() {
         </div>
       </header>
 
+      {/* Spacer to prevent content jump */}
+      <div className="h-20"></div>
+
       {/* Main Content */}
-      <main className="flex-1 bg-gray-50">
+      <main className="relative bg-gray-50 z-10 lg:mb-[400px]">
         <Outlet />
       </main>
 

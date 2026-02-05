@@ -14,7 +14,7 @@ import { CalendarIcon, Clock, MapPin, Phone, User } from "lucide-react";
 import { toast } from "sonner";
 
 export function UserBooking() {
-  // const [searchParams] = useSearchParams();
+  const { user } = useAuth();
   const navigate = useNavigate();
   // const technicianId = searchParams.get('technicianId');
 
@@ -27,6 +27,17 @@ export function UserBooking() {
     timeSlot: "",
     description: "",
   });
+
+  // Pre-fill user data if logged in
+  useEffect(() => {
+    if (user) {
+      setFormData(prev => ({
+        ...prev,
+        name: user.fullName || '',
+        phone: user.phone || ''
+      }));
+    }
+  }, [user]);
 
   const services = [
     { value: "electric", label: "Sửa Điện" },
@@ -51,7 +62,7 @@ export function UserBooking() {
     "17:00 - 18:00",
   ];
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
     if (!date) {
@@ -223,11 +234,11 @@ export function UserBooking() {
           </CardContent>
 
           <CardFooter className="flex gap-4">
-            <Button type="button" variant="outline" onClick={() => navigate(-1)} className="flex-1">
+            <Button type="button" variant="outline" onClick={() => navigate(-1)} className="flex-1" disabled={isLoading}>
               Quay Lại
             </Button>
-            <Button type="submit" className="flex-1">
-              Xác Nhận Đặt Lịch
+            <Button type="submit" className="flex-1" disabled={isLoading}>
+              {isLoading ? 'Đang xử lý...' : 'Xác Nhận Đặt Lịch'}
             </Button>
           </CardFooter>
         </form>
