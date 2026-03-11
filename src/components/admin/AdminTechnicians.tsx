@@ -18,6 +18,7 @@ import {
   getAllWorkers,
   verifyWorker,
   getWorkerCertifications,
+  getWorkerReviews, // ✅ ADD
   WorkerProfile,
   Certification,
 } from "../../services/workerService";
@@ -41,12 +42,62 @@ export function AdminTechnicians() {
   const [rejectReason, setRejectReason] = useState("");
   const [rejecting, setRejecting] = useState(false);
 
+  // ✅ Helper: tính avg/count từ API reviews (fallback mapping field)
+  const computeRatingFromReviewsResponse = (data: any) => {
+    const list: any[] = Array.isArray(data) ? data : (data?.items ?? data?.data ?? []);
+    const count = list.length;
+
+    const sum = list.reduce((acc: number, r: any) => {
+      const rating = Number(r?.rating ?? r?.stars ?? r?.score ?? 0) || 0;
+      return acc + rating;
+    }, 0);
+
+    const avg = count > 0 ? Math.round((sum / count) * 10) / 10 : 0;
+    return { avg, count };
+  };
+
+  // ✅ Hydrate rating cho list (ít thợ thì ok, như bạn đang có 5)
+  const hydrateRatings = async (workers: WorkerProfile[]) => {
+    const updated = await Promise.all(
+      workers.map(async (w) => {
+        try {
+          const data = await getWorkerReviews(w.workerId);
+          const { avg, count } = computeRatingFromReviewsResponse(data);
+          return {
+            ...w,
+            ratingAvg: avg,
+            ratingCount: count,
+          } as WorkerProfile;
+        } catch {
+          return w;
+        }
+      }),
+    );
+
+    setActiveWorkers(updated);
+
+    // Nếu dialog đang mở "Xem nhanh" thì update luôn rating trong dialog
+    setSelectedTech((prev) => {
+      if (!prev) return prev;
+      const found = updated.find((x) => x.workerId === prev.workerId);
+      return found ?? prev;
+    });
+  };
+
   const loadData = async () => {
     setLoading(true);
     try {
       const [active, pending] = await Promise.all([getAllWorkers(true), getAllWorkers(false)]);
-      setActiveWorkers(active || []);
-      setPendingWorkers(pending || []);
+
+      const activeList = (active || []) as WorkerProfile[];
+      const pendingList = (pending || []) as WorkerProfile[];
+
+      setActiveWorkers(activeList);
+      setPendingWorkers(pendingList);
+
+      // ✅ FIX: lấy reviews để rating trên list không còn 0.0
+      // (pending không cần rating, chỉ hydrate active)
+      await hydrateRatings(activeList);
     } catch (error) {
       toast.error("Lỗi khi tải danh sách thợ");
       console.error(error);
@@ -57,6 +108,7 @@ export function AdminTechnicians() {
 
   useEffect(() => {
     loadData();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const loadPendingCerts = async (workerId: string) => {
@@ -138,6 +190,17 @@ export function AdminTechnicians() {
     );
   }, [activeWorkers, searchTerm]);
 
+  // ✅ Rating TB (weighted theo ratingCount, chuẩn hơn)
+  const overallRatingAvg = useMemo(() => {
+    const totalCount = activeWorkers.reduce((acc: number, w) => acc + (Number(w.ratingCount) || 0), 0);
+    const totalSum = activeWorkers.reduce(
+      (acc: number, w) => acc + (Number(w.ratingAvg) || 0) * (Number(w.ratingCount) || 0),
+      0,
+    );
+    const avg = totalCount > 0 ? totalSum / totalCount : 0;
+    return Number.isFinite(avg) ? avg.toFixed(1) : "0.0";
+  }, [activeWorkers]);
+
   return (
     <div className="space-y-6 animate-slide-up">
       {/* Header */}
@@ -206,14 +269,7 @@ export function AdminTechnicians() {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-gray-600 text-sm mb-1">Rating TB</p>
-                <p className="text-3xl text-blue-600">
-                  {(() => {
-                    const list = activeWorkers.filter((x) => Number.isFinite(x.ratingAvg));
-                    if (list.length === 0) return "0.0";
-                    const avg = list.reduce((s, x) => s + (x.ratingAvg || 0), 0) / list.length;
-                    return avg.toFixed(1);
-                  })()}
-                </p>
+                <p className="text-3xl text-blue-600">{overallRatingAvg}</p>
               </div>
               <div className="w-12 h-12 bg-blue-500 rounded-full flex items-center justify-center">
                 <Star className="w-6 h-6 text-white fill-white" />
@@ -467,6 +523,16 @@ export function AdminTechnicians() {
                   <p className="font-medium">
                     {selectedTech.createdAt ? new Date(selectedTech.createdAt).toLocaleDateString("vi-VN") : "N/A"}
                   </p>
+                </div>
+
+                {/* ✅ thêm quick rating trong dialog */}
+                <div>
+                  <p className="text-xs text-gray-500 uppercase">Rating</p>
+                  <div className="flex items-center gap-1 mt-1">
+                    <Star className="w-4 h-4 fill-yellow-400 text-yellow-400" />
+                    <span className="font-medium">{Number(selectedTech.ratingAvg ?? 0).toFixed(1)}</span>
+                    <span className="text-xs text-gray-500">({selectedTech.ratingCount ?? 0})</span>
+                  </div>
                 </div>
               </div>
 

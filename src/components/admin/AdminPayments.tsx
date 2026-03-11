@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { DollarSign, TrendingUp, CreditCard, Download } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "../ui/card";
 import { Button } from "../ui/button";
@@ -18,17 +18,39 @@ import {
   ResponsiveContainer,
 } from "recharts";
 
-const revenueData = [
-  { date: "20/10", revenue: 12500000, commission: 1875000, orders: 45 },
-  { date: "21/10", revenue: 15200000, commission: 2280000, orders: 52 },
-  { date: "22/10", revenue: 13800000, commission: 2070000, orders: 48 },
-  { date: "23/10", revenue: 18500000, commission: 2775000, orders: 61 },
-  { date: "24/10", revenue: 16900000, commission: 2535000, orders: 57 },
-  { date: "25/10", revenue: 21300000, commission: 3195000, orders: 68 },
-  { date: "26/10", revenue: 19800000, commission: 2970000, orders: 64 },
-];
+// ✅ dùng adminApi có sẵn của bạn
+import { adminApi } from "../../services/api";
 
-const transactions = [
+type TimeFilter = "week" | "month" | "year";
+
+type BookingLike = {
+  bookingId?: string;
+  id?: string;
+
+  status?: any; // string/number tuỳ backend
+  amount?: number;
+  finalAmount?: number;
+
+  scheduledDate?: string;
+  scheduledAt?: string;
+  createdAt?: string;
+  updatedAt?: string;
+  completedAt?: string;
+
+  // vẫn giữ để không lỗi type nếu backend trả
+  serviceFeePercent?: number;
+  platformFeeAmount?: number;
+};
+
+type RevenuePoint = {
+  date: string;
+  revenue: number;
+  commission: number; // ✅ = revenue * 5%
+  orders: number;
+};
+
+// ====== MOCK payments table (vì chưa có endpoint list payments admin) ======
+const mockTransactions = [
   {
     id: "PAY-1245",
     orderId: "#1245",
@@ -77,7 +99,7 @@ const transactions = [
     id: "PAY-1241",
     orderId: "#1241",
     customer: "Vũ Thu E",
-    technician: null,
+    technician: null as any,
     amount: 200000,
     commission: 0,
     method: "Tiền mặt",
@@ -86,14 +108,257 @@ const transactions = [
   },
 ];
 
+// ====== helpers ======
+function asArray(payload: any): any[] {
+  if (!payload) return [];
+  if (Array.isArray(payload)) return payload;
+  if (Array.isArray(payload.data)) return payload.data;
+  if (Array.isArray(payload.items)) return payload.items;
+  if (Array.isArray(payload.result)) return payload.result;
+  return [];
+}
+
+function pad2(n: number) {
+  return String(n).padStart(2, "0");
+}
+
+function toYmd(d: Date) {
+  return `${d.getFullYear()}-${pad2(d.getMonth() + 1)}-${pad2(d.getDate())}`;
+}
+
+function startOfDay(d: Date) {
+  return new Date(d.getFullYear(), d.getMonth(), d.getDate(), 0, 0, 0, 0);
+}
+
+function startOfMonth(d: Date) {
+  return new Date(d.getFullYear(), d.getMonth(), 1, 0, 0, 0, 0);
+}
+
+function addDays(d: Date, days: number) {
+  const x = new Date(d);
+  x.setDate(x.getDate() + days);
+  return x;
+}
+
+function labelDDMM(d: Date) {
+  return `${pad2(d.getDate())}/${pad2(d.getMonth() + 1)}`;
+}
+
+function monthLabel(d: Date) {
+  return `${pad2(d.getMonth() + 1)}/${String(d.getFullYear()).slice(-2)}`;
+}
+
+function safeTime(s?: string) {
+  if (!s) return NaN;
+  const t = new Date(s).getTime();
+  return Number.isFinite(t) ? t : NaN;
+}
+
+function pickBookingTime(b: BookingLike): number {
+  // ưu tiên scheduledDate/scheduledAt nếu có; fallback createdAt
+  const candidates = [b.scheduledDate, b.scheduledAt, b.completedAt, b.createdAt, b.updatedAt];
+  for (const c of candidates) {
+    const t = safeTime(c);
+    if (Number.isFinite(t)) return t;
+  }
+  return NaN;
+}
+
+function isCompletedBooking(b: BookingLike) {
+  if (b.completedAt) return true;
+
+  const st = b.status;
+  if (typeof st === "string") {
+    const s = st.toLowerCase();
+    return (
+      s.includes("complete") ||
+      s.includes("completed") ||
+      s.includes("done") ||
+      s.includes("finish") ||
+      s.includes("success")
+    );
+  }
+  // nếu backend dùng số enum thì đoán: >=3 thường là completed
+  if (typeof st === "number") return st >= 3;
+  return false;
+}
+
+function getBookingAmount(b: BookingLike) {
+  const v = typeof b.finalAmount === "number" ? b.finalAmount : typeof b.amount === "number" ? b.amount : 0;
+  return Number.isFinite(v) ? v : 0;
+}
+
+const PLATFORM_FEE_RATE = 0.05; // ✅ 5%
+
 export function AdminPayments() {
-  const [timeFilter, setTimeFilter] = useState("week");
+  const [timeFilter, setTimeFilter] = useState<TimeFilter>("week");
 
-  const totalRevenue = transactions.filter((t) => t.status === "completed").reduce((sum, t) => sum + t.amount, 0);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-  const totalCommission = transactions
-    .filter((t) => t.status === "completed")
-    .reduce((sum, t) => sum + t.commission, 0);
+  const [revenueData, setRevenueData] = useState<RevenuePoint[]>([]);
+  const [totalRevenue, setTotalRevenue] = useState<number>(0);
+  const [totalCommission, setTotalCommission] = useState<number>(0);
+
+  // ✅ NEW: giao dịch theo tháng (đếm booking completed trong tháng hiện tại)
+  const [monthTransactions, setMonthTransactions] = useState<number>(0);
+
+  // Bảng vẫn mock (chưa có endpoint list payments admin)
+  const transactions = useMemo(() => mockTransactions, []);
+
+  // ✅ avg theo doanh thu thật + số đơn completed thật theo timeFilter
+  const [completedCountRange, setCompletedCountRange] = useState<number>(0);
+
+  const avgOrderValue = useMemo(() => {
+    if (completedCountRange <= 0) return 0;
+    return Math.round(totalRevenue / completedCountRange);
+  }, [totalRevenue, completedCountRange]);
+
+  useEffect(() => {
+    const load = async () => {
+      setLoading(true);
+      setError(null);
+
+      try {
+        const today = startOfDay(new Date());
+
+        // range cho chart/tổng doanh thu theo filter
+        const rangeFrom =
+          timeFilter === "week"
+            ? addDays(today, -6)
+            : timeFilter === "month"
+              ? addDays(today, -29)
+              : addDays(today, -364);
+
+        // range cho "giao dịch tháng này"
+        const monthFrom = startOfMonth(today);
+
+        // fetch 1 lần với from sớm nhất để đủ dữ liệu cho cả 2
+        const minFrom = rangeFrom.getTime() < monthFrom.getTime() ? rangeFrom : monthFrom;
+
+        const scheduledFrom = toYmd(minFrom);
+        const scheduledTo = toYmd(today);
+
+        // 1) thử gọi có filter ngày
+        let raw: any;
+        try {
+          raw = await adminApi.getAdminBookings({ scheduledFrom, scheduledTo });
+        } catch {
+          raw = null;
+        }
+
+        let bookings: BookingLike[] = asArray(raw);
+
+        // 2) nếu rỗng -> fallback gọi không filter, rồi lọc client
+        if (!bookings || bookings.length === 0) {
+          const rawAll = await adminApi.getAdminBookings();
+          bookings = asArray(rawAll);
+        }
+
+        // ----- lọc completed -----
+        const toMsInclusive = addDays(today, 1).getTime();
+
+        const inRange = (b: BookingLike, from: Date, toMs: number) => {
+          const t = pickBookingTime(b);
+          return Number.isFinite(t) && t >= from.getTime() && t < toMs;
+        };
+
+        const completedAll = bookings.filter((b) => isCompletedBooking(b));
+
+        const completedRange = completedAll.filter((b) => inRange(b, rangeFrom, toMsInclusive));
+        const completedThisMonth = completedAll.filter((b) => inRange(b, monthFrom, toMsInclusive));
+
+        // ✅ giao dịch tháng này = số booking completed trong tháng
+        setMonthTransactions(completedThisMonth.length);
+
+        // ✅ tổng đơn completed theo range để tính TB/đơn
+        setCompletedCountRange(completedRange.length);
+
+        // ✅ doanh thu theo range
+        const revenue = completedRange.reduce((sum, b) => sum + getBookingAmount(b), 0);
+        const safeRevenue = Number.isFinite(revenue) ? revenue : 0;
+        setTotalRevenue(safeRevenue);
+
+        // ✅ hoa hồng = 5% tổng doanh thu
+        const commission = Math.round(safeRevenue * PLATFORM_FEE_RATE);
+        setTotalCommission(Number.isFinite(commission) ? commission : 0);
+
+        // ----- build chart -----
+        const points: RevenuePoint[] = [];
+
+        if (timeFilter === "year") {
+          // 12 tháng gần nhất
+          const map = new Map<string, { d: Date; revenue: number; orders: number }>();
+          for (let i = 0; i < 12; i++) {
+            const d = new Date(today.getFullYear(), today.getMonth() - (11 - i), 1);
+            const key = `${d.getFullYear()}-${d.getMonth()}`;
+            map.set(key, { d, revenue: 0, orders: 0 });
+          }
+
+          for (const b of completedRange) {
+            const t = pickBookingTime(b);
+            if (!Number.isFinite(t)) continue;
+            const d = new Date(t);
+            const key = `${d.getFullYear()}-${d.getMonth()}`;
+            const cell = map.get(key);
+            if (!cell) continue;
+            cell.revenue += getBookingAmount(b);
+            cell.orders += 1;
+          }
+
+          for (const [, v] of map) {
+            points.push({
+              date: monthLabel(v.d),
+              revenue: v.revenue,
+              commission: Math.round(v.revenue * PLATFORM_FEE_RATE),
+              orders: v.orders,
+            });
+          }
+        } else {
+          const days = timeFilter === "week" ? 7 : 30;
+          const map = new Map<string, { d: Date; revenue: number; orders: number }>();
+          for (let i = 0; i < days; i++) {
+            const d = addDays(rangeFrom, i);
+            map.set(toYmd(d), { d, revenue: 0, orders: 0 });
+          }
+
+          for (const b of completedRange) {
+            const t = pickBookingTime(b);
+            if (!Number.isFinite(t)) continue;
+            const d = new Date(t);
+            const key = toYmd(d);
+            const cell = map.get(key);
+            if (!cell) continue;
+
+            cell.revenue += getBookingAmount(b);
+            cell.orders += 1;
+          }
+
+          for (const [, v] of map) {
+            points.push({
+              date: labelDDMM(v.d),
+              revenue: v.revenue,
+              commission: Math.round(v.revenue * PLATFORM_FEE_RATE),
+              orders: v.orders,
+            });
+          }
+        }
+
+        setRevenueData(points);
+      } catch (e: any) {
+        setError(e?.response?.data?.message || e?.message || "Load payments summary failed");
+        setTotalRevenue(0);
+        setTotalCommission(0);
+        setRevenueData([]);
+        setMonthTransactions(0);
+        setCompletedCountRange(0);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    load();
+  }, [timeFilter]);
 
   const getStatusBadge = (status: string) => {
     switch (status) {
@@ -125,6 +390,7 @@ export function AdminPayments() {
         <div>
           <h1 className="text-3xl mb-2">Quản Lý Thanh Toán</h1>
           <p className="text-gray-600">Theo dõi doanh thu và giao dịch</p>
+          {error && <p className="text-sm text-red-600 mt-1">⚠ {error}</p>}
         </div>
         <Button className="bg-gradient-to-r from-[#007BFF] to-blue-600">
           <Download className="w-4 h-4 mr-2" />
@@ -140,10 +406,10 @@ export function AdminPayments() {
               <div className="w-14 h-14 bg-gradient-to-br from-green-500 to-emerald-600 rounded-xl flex items-center justify-center shadow-lg">
                 <DollarSign className="w-7 h-7 text-white" />
               </div>
-              <Badge className="bg-green-500">+12.5%</Badge>
+              <Badge className="bg-green-500">{loading ? "..." : "+12.5%"}</Badge>
             </div>
             <p className="text-gray-600 text-sm mb-1">Tổng doanh thu</p>
-            <p className="text-3xl text-green-600">₫{totalRevenue.toLocaleString()}</p>
+            <p className="text-3xl text-green-600">₫{totalRevenue.toLocaleString("vi-VN")}</p>
           </CardContent>
         </Card>
 
@@ -153,10 +419,10 @@ export function AdminPayments() {
               <div className="w-14 h-14 bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl flex items-center justify-center shadow-lg">
                 <TrendingUp className="w-7 h-7 text-white" />
               </div>
-              <Badge className="bg-blue-500">+8.3%</Badge>
+              <Badge className="bg-blue-500">{loading ? "..." : "+8.3%"}</Badge>
             </div>
             <p className="text-gray-600 text-sm mb-1">Hoa hồng nền tảng</p>
-            <p className="text-3xl text-blue-600">₫{totalCommission.toLocaleString()}</p>
+            <p className="text-3xl text-blue-600">₫{totalCommission.toLocaleString("vi-VN")}</p>
           </CardContent>
         </Card>
 
@@ -167,8 +433,8 @@ export function AdminPayments() {
                 <CreditCard className="w-7 h-7 text-white" />
               </div>
             </div>
-            <p className="text-gray-600 text-sm mb-1">Giao dịch hôm nay</p>
-            <p className="text-3xl text-purple-600">{transactions.length}</p>
+            <p className="text-gray-600 text-sm mb-1">Giao dịch tháng này</p>
+            <p className="text-3xl text-purple-600">{loading ? "..." : monthTransactions}</p>
           </CardContent>
         </Card>
 
@@ -180,9 +446,7 @@ export function AdminPayments() {
               </div>
             </div>
             <p className="text-gray-600 text-sm mb-1">Giá trị TB/đơn</p>
-            <p className="text-3xl text-orange-600">
-              ₫{Math.round(totalRevenue / transactions.filter((t) => t.status === "completed").length).toLocaleString()}
-            </p>
+            <p className="text-3xl text-orange-600">₫{avgOrderValue.toLocaleString("vi-VN")}</p>
           </CardContent>
         </Card>
       </div>
@@ -195,9 +459,15 @@ export function AdminPayments() {
             <div className="flex items-center justify-between">
               <div>
                 <CardTitle>Biểu đồ doanh thu</CardTitle>
-                <CardDescription>7 ngày gần nhất</CardDescription>
+                <CardDescription>
+                  {timeFilter === "week"
+                    ? "7 ngày gần nhất"
+                    : timeFilter === "month"
+                      ? "30 ngày gần nhất"
+                      : "12 tháng gần nhất"}
+                </CardDescription>
               </div>
-              <Select value={timeFilter} onValueChange={setTimeFilter}>
+              <Select value={timeFilter} onValueChange={(v) => setTimeFilter(v as TimeFilter)}>
                 <SelectTrigger className="w-32">
                   <SelectValue />
                 </SelectTrigger>
@@ -218,7 +488,7 @@ export function AdminPayments() {
                 <Tooltip />
                 <Legend />
                 <Line type="monotone" dataKey="revenue" stroke="#10B981" strokeWidth={3} name="Doanh thu" />
-                <Line type="monotone" dataKey="commission" stroke="#007BFF" strokeWidth={3} name="Hoa hồng" />
+                <Line type="monotone" dataKey="commission" stroke="#007BFF" strokeWidth={3} name="Hoa hồng (5%)" />
               </LineChart>
             </ResponsiveContainer>
           </CardContent>
@@ -245,7 +515,7 @@ export function AdminPayments() {
         </Card>
       </div>
 
-      {/* Payment Methods Distribution */}
+      {/* Payment Methods Distribution (mock) */}
       <Card className="shadow-lg border-0">
         <CardHeader>
           <CardTitle>Phân bổ phương thức thanh toán</CardTitle>
@@ -284,7 +554,7 @@ export function AdminPayments() {
         </CardContent>
       </Card>
 
-      {/* Transactions Table */}
+      {/* Transactions Table (mock) */}
       <Card className="border-0 shadow-lg">
         <CardHeader>
           <CardTitle>Lịch sử giao dịch</CardTitle>
@@ -312,9 +582,11 @@ export function AdminPayments() {
                   <TableCell className="font-medium">{transaction.orderId}</TableCell>
                   <TableCell>{transaction.customer}</TableCell>
                   <TableCell>{transaction.technician || <span className="text-gray-400">-</span>}</TableCell>
-                  <TableCell className="font-medium text-green-600">₫{transaction.amount.toLocaleString()}</TableCell>
+                  <TableCell className="font-medium text-green-600">
+                    ₫{transaction.amount.toLocaleString("vi-VN")}
+                  </TableCell>
                   <TableCell className="font-medium text-blue-600">
-                    ₫{transaction.commission.toLocaleString()}
+                    ₫{transaction.commission.toLocaleString("vi-VN")}
                   </TableCell>
                   <TableCell>{getMethodBadge(transaction.method)}</TableCell>
                   <TableCell className="text-center">{getStatusBadge(transaction.status)}</TableCell>

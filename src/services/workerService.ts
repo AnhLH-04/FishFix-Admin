@@ -192,5 +192,25 @@ export async function getAllWorkers(isVerified?: boolean): Promise<WorkerProfile
   // normalize để luôn là array
   return asArray<WorkerProfile>(data);
 }
+export type WorkerReview = {
+  id?: string | number;
+  rating?: number;
+  comment?: string;
+  createdAt?: string;
+  updatedAt?: string;
 
+  // người đánh giá (fallback)
+  customerName?: string;
+  fullName?: string;
+  userName?: string;
+  email?: string;
+  phone?: string;
+  customerId?: string | number;
+};
+
+export async function getWorkerReviews(workerId: string | number) {
+  // Swagger bạn đưa: /api/workers/{workerId}/reviews
+  const res = await api.get(`/api/workers/${workerId}/reviews`);
+  return res.data;
+}
 export default api;
