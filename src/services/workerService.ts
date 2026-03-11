@@ -209,7 +209,7 @@ export type WorkerReview = {
 };
 
 export async function getWorkerReviews(workerId: string | number) {
-  // Swagger bạn đưa: /api/workers/{workerId}/reviews
+  // Swagger bạn đưa: /api/workers/{workerId}/reviews...
   const res = await api.get(`/api/workers/${workerId}/reviews`);
   return res.data;
 }

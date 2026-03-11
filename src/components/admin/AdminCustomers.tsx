@@ -1,5 +1,6 @@
-import { useState, useEffect, useMemo } from "react";
-import { Search, Filter, MoreVertical, Eye, Lock, Unlock, UserX, Loader2 } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
+import { Search, MoreVertical, Eye, Lock, Unlock, Loader2 } from "lucide-react";
+
 import { Card, CardContent } from "../ui/card";
 import { Input } from "../ui/input";
 import { Button } from "../ui/button";
@@ -15,7 +16,9 @@ import {
 } from "../ui/dropdown-menu";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../ui/select";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "../ui/dialog";
-import { getAllUsers, UserDto } from "../../services/userService";
+
+import { getAllUsers } from "../../services/userService";
+import { adminApi } from "../../services/api";
 
 interface Customer {
   userId: string;
@@ -25,6 +28,8 @@ interface Customer {
   isActive: boolean;
   createdAt: string;
   roleId: number;
+  totalOrders: number;
+  totalSpent: number;
 }
 
 export function AdminCustomers() {
@@ -36,54 +41,74 @@ export function AdminCustomers() {
   const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(null);
 
   useEffect(() => {
-    loadCustomers();
+    loadData();
   }, []);
 
-  const loadCustomers = async () => {
+  const loadData = async () => {
     try {
       setLoading(true);
       setError(null);
+
       const users = await getAllUsers();
-      // Filter to show only customers (roleId = 2), exclude admins (roleId = 3) and workers (roleId = 1 if applicable)
-      const customerUsers = users.filter((u) => u.roleId !== 3);
-      setCustomers(
-        customerUsers.map((u) => ({
+      const bookingsRes: any = await adminApi.getAdminBookings({});
+
+      const bookingList = Array.isArray(bookingsRes?.data)
+        ? bookingsRes.data
+        : Array.isArray(bookingsRes)
+          ? bookingsRes
+          : [];
+
+      const enrichedUsers: Customer[] = users.map((u: any) => {
+        const userBookings = bookingList.filter((b: any) => b.customerId === u.userId);
+
+        const completed = userBookings.filter(
+          (b: any) => b.status === "completed" || b.status === "Completed" || b.status === 3,
+        );
+
+        const totalOrders = completed.length;
+
+        const totalSpent = completed.reduce(
+          (sum: number, b: any) =>
+            sum + (typeof b.finalAmount === "number" ? b.finalAmount : typeof b.amount === "number" ? b.amount : 0),
+          0,
+        );
+
+        return {
           userId: u.userId,
           fullName: u.fullName || "Chưa cập nhật",
-          phone: u.phone,
-          email: u.email,
+          phone: u.phone || "",
+          email: u.email || "",
           isActive: u.isActive,
           createdAt: u.createdAt,
           roleId: u.roleId,
-        })),
-      );
+          totalOrders,
+          totalSpent,
+        };
+      });
+
+      setCustomers(enrichedUsers);
     } catch (err) {
-      console.error("Failed to load customers:", err);
-      setError("Không thể tải danh sách người dùng. Vui lòng thử lại.");
+      console.error(err);
+      setError("Không thể tải danh sách người dùng");
     } finally {
       setLoading(false);
     }
   };
 
-  const filteredCustomers = customers.filter((customer) => {
-    const matchesSearch =
-      customer.fullName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      customer.phone.includes(searchTerm) ||
-      customer.email.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesStatus =
-      statusFilter === "all" ||
-      (statusFilter === "active" && customer.isActive) ||
-      (statusFilter === "inactive" && !customer.isActive);
-    return matchesSearch && matchesStatus;
-  });
+  const filteredCustomers = useMemo(() => {
+    return customers.filter((c) => {
+      const matchSearch = `${c.fullName} ${c.phone} ${c.email}`.toLowerCase().includes(searchTerm.toLowerCase());
 
-  const getStatusBadge = (isActive: boolean) => {
-    return isActive ? (
-      <Badge className="bg-green-500">Hoạt động</Badge>
-    ) : (
-      <Badge variant="secondary">Không hoạt động</Badge>
-    );
-  };
+      const matchStatus =
+        statusFilter === "all" ||
+        (statusFilter === "active" && c.isActive) ||
+        (statusFilter === "inactive" && !c.isActive);
+
+      return matchSearch && matchStatus;
+    });
+  }, [customers, searchTerm, statusFilter]);
+
+  const formatDate = (date: string) => new Date(date).toLocaleDateString("vi-VN");
 
   const getRoleBadge = (roleId: number) => {
     switch (roleId) {
@@ -94,13 +119,12 @@ export function AdminCustomers() {
       case 3:
         return <Badge className="bg-orange-500">Admin</Badge>;
       default:
-        return <Badge variant="outline">Unknown</Badge>;
+        return <Badge variant="outline">Khác</Badge>;
     }
   };
 
-  const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString("vi-VN");
-  };
+  const getStatusBadge = (active: boolean) =>
+    active ? <Badge className="bg-green-500">Hoạt động</Badge> : <Badge variant="secondary">Bị khóa</Badge>;
 
   if (loading) {
     return (
@@ -115,80 +139,82 @@ export function AdminCustomers() {
     return (
       <div className="flex flex-col items-center justify-center h-64">
         <p className="text-red-500 mb-4">{error}</p>
-        <Button onClick={loadCustomers}>Thử lại</Button>
+        <Button onClick={loadData}>Thử lại</Button>
       </div>
     );
   }
 
   return (
-    <div className="space-y-6 animate-slide-up">
-      {/* Header */}
+    <div className="space-y-6">
+      {/* HEADER */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl mb-2">Quản Lý Người Dùng</h1>
+          <h1 className="text-3xl font-bold">Quản Lý Người Dùng</h1>
           <p className="text-gray-600">Tổng {customers.length} người dùng</p>
         </div>
-        <Button onClick={loadCustomers} variant="outline">
+        <Button onClick={loadData} variant="outline">
           Làm mới
         </Button>
       </div>
 
+      {/* STATS */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
         <Card>
           <CardContent className="p-6">
-            <p className="text-gray-600 text-sm mb-1">Tổng người dùng</p>
+            <p className="text-sm text-gray-600">Tổng người dùng</p>
             <p className="text-3xl text-blue-600">{customers.length}</p>
           </CardContent>
         </Card>
 
         <Card>
           <CardContent className="p-6">
-            <p className="text-gray-600 text-sm mb-1">Đang hoạt động</p>
+            <p className="text-sm text-gray-600">Đang hoạt động</p>
             <p className="text-3xl text-green-600">{customers.filter((c) => c.isActive).length}</p>
           </CardContent>
         </Card>
 
         <Card>
           <CardContent className="p-6">
-            <p className="text-gray-600 text-sm mb-1">Khách hàng</p>
-            <p className="text-3xl text-purple-600">{customers.filter((c) => c.roleId === 2).length}</p>
+            <p className="text-sm text-gray-600">Khách VIP</p>
+            <p className="text-3xl text-purple-600">{customers.filter((c) => c.totalSpent > 5000000).length}</p>
           </CardContent>
         </Card>
-        <Card className="border-0 shadow-lg">
+
+        <Card>
           <CardContent className="p-6">
-            <p className="text-gray-600 text-sm mb-1">Thợ sửa chữa</p>
+            <p className="text-sm text-gray-600">Thợ sửa chữa</p>
             <p className="text-3xl text-blue-600">{customers.filter((c) => c.roleId === 1).length}</p>
           </CardContent>
         </Card>
       </div>
 
+      {/* SEARCH + FILTER */}
       <Card>
-        <CardContent className="p-6">
-          <div className="flex flex-col md:flex-row gap-4">
-            <div className="flex-1 relative">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
-              <Input
-                type="text"
-                placeholder="Tìm kiếm theo tên, SĐT, email..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-10"
-              />
-            </div>
-            <Select value={statusFilter} onValueChange={setStatusFilter}>
-              <SelectTrigger className="w-full md:w-48">
-                <SelectValue placeholder="Trạng thái" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">Tất cả</SelectItem>
-                <SelectItem value="active">Hoạt động</SelectItem>
-                <SelectItem value="inactive">Không hoạt động</SelectItem>
-              </SelectContent>
-            </Select>
+        <CardContent className="p-6 flex gap-4 flex-col md:flex-row">
+          <div className="flex-1 relative">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+            <Input
+              placeholder="Tìm kiếm theo tên, SĐT, email..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="pl-10"
+            />
           </div>
+
+          <Select value={statusFilter} onValueChange={setStatusFilter}>
+            <SelectTrigger className="w-full md:w-48">
+              <SelectValue placeholder="Trạng thái" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Tất cả</SelectItem>
+              <SelectItem value="active">Hoạt động</SelectItem>
+              <SelectItem value="inactive">Bị khóa</SelectItem>
+            </SelectContent>
+          </Select>
         </CardContent>
       </Card>
 
+      {/* TABLE */}
       <Card>
         <CardContent className="p-0">
           <Table>
@@ -196,6 +222,8 @@ export function AdminCustomers() {
               <TableRow className="bg-gray-50">
                 <TableHead>Người dùng</TableHead>
                 <TableHead>Liên hệ</TableHead>
+                <TableHead className="text-center">Số đơn</TableHead>
+                <TableHead className="text-right">Tổng chi tiêu</TableHead>
                 <TableHead className="text-center">Vai trò</TableHead>
                 <TableHead className="text-center">Trạng thái</TableHead>
                 <TableHead>Ngày tham gia</TableHead>
@@ -204,29 +232,39 @@ export function AdminCustomers() {
             </TableHeader>
 
             <TableBody>
-              {filteredCustomers.length > 0 ? (
-                filteredCustomers.map((customer) => (
-                  <TableRow key={customer.userId} className="hover:bg-blue-50 transition-colors">
-                    <TableCell>
-                      <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center text-white">
-                          {customer.fullName.charAt(0).toUpperCase()}
-                        </div>
-                        <div>
-                          <p className="font-medium">{customer.fullName}</p>
-                          <p className="text-sm text-gray-500">ID: {customer.userId.slice(0, 8)}...</p>
-                        </div>
-                      </div>
-                    </TableCell>
+              {filteredCustomers.length === 0 ? (
+                <TableRow>
+                  <TableCell colSpan={8} className="text-center py-6">
+                    Không có dữ liệu
+                  </TableCell>
+                </TableRow>
+              ) : (
+                filteredCustomers.map((c) => (
+                  <TableRow key={c.userId}>
                     <TableCell>
                       <div>
-                        <p className="text-sm">{customer.phone}</p>
-                        <p className="text-sm text-gray-500">{customer.email}</p>
+                        <p className="font-medium">{c.fullName}</p>
+                        <p className="text-xs text-gray-500">ID: {c.userId.slice(0, 8)}...</p>
                       </div>
                     </TableCell>
-                    <TableCell className="text-center">{getRoleBadge(customer.roleId)}</TableCell>
-                    <TableCell className="text-center">{getStatusBadge(customer.isActive)}</TableCell>
-                    <TableCell className="text-sm">{formatDate(customer.createdAt)}</TableCell>
+
+                    <TableCell>
+                      <p>{c.phone}</p>
+                      <p className="text-xs text-gray-500">{c.email}</p>
+                    </TableCell>
+
+                    <TableCell className="text-center">{c.totalOrders}</TableCell>
+
+                    <TableCell className="text-right text-green-600 font-medium">
+                      ₫{c.totalSpent.toLocaleString("vi-VN")}
+                    </TableCell>
+
+                    <TableCell className="text-center">{getRoleBadge(c.roleId)}</TableCell>
+
+                    <TableCell className="text-center">{getStatusBadge(c.isActive)}</TableCell>
+
+                    <TableCell>{formatDate(c.createdAt)}</TableCell>
+
                     <TableCell className="text-center">
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>
@@ -237,15 +275,15 @@ export function AdminCustomers() {
                         <DropdownMenuContent align="end">
                           <DropdownMenuLabel>Thao tác</DropdownMenuLabel>
                           <DropdownMenuSeparator />
-                          <DropdownMenuItem onClick={() => setSelectedCustomer(customer)}>
+                          <DropdownMenuItem onClick={() => setSelectedCustomer(c)}>
                             <Eye className="w-4 h-4 mr-2" />
                             Xem chi tiết
                           </DropdownMenuItem>
                           <DropdownMenuItem>
-                            {customer.isActive ? (
+                            {c.isActive ? (
                               <>
                                 <Lock className="w-4 h-4 mr-2" />
-                                Khóa tài khoản
+                                Khóa
                               </>
                             ) : (
                               <>
@@ -259,53 +297,37 @@ export function AdminCustomers() {
                     </TableCell>
                   </TableRow>
                 ))
-              ) : (
-                <TableRow>
-                  <TableCell colSpan={6} className="text-center py-6">
-                    Không có dữ liệu
-                  </TableCell>
-                </TableRow>
               )}
             </TableBody>
           </Table>
         </CardContent>
       </Card>
 
-      {/* Detail Dialog */}
+      {/* DIALOG */}
       <Dialog open={!!selectedCustomer} onOpenChange={() => setSelectedCustomer(null)}>
-        <DialogContent className="max-w-2xl">
+        <DialogContent className="max-w-xl">
           <DialogHeader>
             <DialogTitle>Chi tiết người dùng</DialogTitle>
-            <DialogDescription>Thông tin chi tiết của {selectedCustomer?.fullName}</DialogDescription>
+            <DialogDescription>Thông tin chi tiết</DialogDescription>
           </DialogHeader>
+
           {selectedCustomer && (
-            <div className="space-y-4">
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <p className="text-sm text-gray-600">Họ tên</p>
-                  <p className="font-medium">{selectedCustomer.fullName}</p>
-                </div>
-                <div>
-                  <p className="text-sm text-gray-600">Số điện thoại</p>
-                  <p className="font-medium">{selectedCustomer.phone}</p>
-                </div>
-                <div>
-                  <p className="text-sm text-gray-600">Email</p>
-                  <p className="font-medium">{selectedCustomer.email}</p>
-                </div>
-                <div>
-                  <p className="text-sm text-gray-600">Vai trò</p>
-                  {getRoleBadge(selectedCustomer.roleId)}
-                </div>
-                <div>
-                  <p className="text-sm text-gray-600">Ngày tham gia</p>
-                  <p className="font-medium">{formatDate(selectedCustomer.createdAt)}</p>
-                </div>
-                <div>
-                  <p className="text-sm text-gray-600">Trạng thái</p>
-                  {getStatusBadge(selectedCustomer.isActive)}
-                </div>
-              </div>
+            <div className="space-y-2">
+              <p>
+                <strong>Họ tên:</strong> {selectedCustomer.fullName}
+              </p>
+              <p>
+                <strong>SĐT:</strong> {selectedCustomer.phone}
+              </p>
+              <p>
+                <strong>Email:</strong> {selectedCustomer.email}
+              </p>
+              <p>
+                <strong>Tổng đơn:</strong> {selectedCustomer.totalOrders}
+              </p>
+              <p>
+                <strong>Tổng chi tiêu:</strong> ₫{selectedCustomer.totalSpent.toLocaleString("vi-VN")}
+              </p>
             </div>
           )}
         </DialogContent>

@@ -747,7 +747,7 @@ export function AdminTechnicians() {
         </DialogContent>
       </Dialog>
 
-      {/* Reject Confirmation Dialog (UI giữ nguyên) */}
+      {/* Reject Confirmation Dialog (UI giữ nguyên)... */}
       <Dialog open={rejectDialogOpen} onOpenChange={setRejectDialogOpen}>
         <DialogContent>
           <DialogHeader>

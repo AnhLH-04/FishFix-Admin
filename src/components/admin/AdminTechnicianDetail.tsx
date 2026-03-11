@@ -68,7 +68,7 @@ export function AdminTechnicianDetail() {
   const [reviewsLoading, setReviewsLoading] = useState(false);
   const [reviewsError, setReviewsError] = useState<string | null>(null);
 
-  // Form states
+  // Form states...
   const [formData, setFormData] = useState({
     bio: "",
     hourlyRate: 0,

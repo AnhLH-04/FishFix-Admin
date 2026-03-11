@@ -767,7 +767,7 @@ function safeTime(s?: string) {
   const t = new Date(s).getTime();
   return Number.isFinite(t) ? t : NaN;
 }
-
+//...
 function pickBookingTime(b: BookingLike): number {
   const candidates = [b.scheduledDate, b.scheduledAt, b.completedAt, b.createdAt, b.updatedAt];
   for (const c of candidates) {
