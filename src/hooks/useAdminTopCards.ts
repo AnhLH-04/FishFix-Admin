@@ -92,7 +92,34 @@
 //   return { ...data, loading, error, reload: load };
 // }
 import { useCallback, useEffect, useState } from "react";
-import { adminApi, identityApi, workerApi, BookingItem, UserItem } from "../services/api";
+import { adminApi, identityApi, workerApi } from "../services/api";
+
+type BookingLike = {
+  bookingId?: string;
+  id?: string;
+  status?: string | number | null;
+  amount?: number;
+  finalAmount?: number;
+  scheduledDate?: string;
+  scheduledAt?: string;
+  createdAt?: string;
+  updatedAt?: string;
+  completedAt?: string;
+};
+
+function asArray<T = any>(payload: unknown): T[] {
+  if (!payload) return [];
+  if (Array.isArray(payload)) return payload as T[];
+
+  if (typeof payload === "object" && payload !== null) {
+    const obj = payload as Record<string, unknown>;
+    if (Array.isArray(obj.data)) return obj.data as T[];
+    if (Array.isArray(obj.items)) return obj.items as T[];
+    if (Array.isArray(obj.result)) return obj.result as T[];
+  }
+
+  return [];
+}
 
 function toYmd(d: Date) {
   const y = d.getFullYear();
@@ -101,28 +128,59 @@ function toYmd(d: Date) {
   return `${y}-${m}-${day}`;
 }
 
-function startOfDayLocal(d: Date) {
+function startOfDay(d: Date) {
   return new Date(d.getFullYear(), d.getMonth(), d.getDate(), 0, 0, 0, 0);
 }
 
-function endOfDayLocalExclusive(d: Date) {
-  return new Date(d.getFullYear(), d.getMonth(), d.getDate() + 1, 0, 0, 0, 0);
+function addDays(d: Date, days: number) {
+  const x = new Date(d);
+  x.setDate(x.getDate() + days);
+  return x;
 }
 
-/**
- * Đếm user tạo trong hôm nay theo LOCAL TIME (VN)
- * Backend trả createdAt dạng ISO UTC (có Z) => new Date(createdAt) tự convert về local
- */
-function countNewUsersToday(users: UserItem[]) {
-  const now = new Date();
-  const start = startOfDayLocal(now).getTime();
-  const end = endOfDayLocalExclusive(now).getTime();
+function safeTime(s?: string) {
+  if (!s) return NaN;
+  const t = new Date(s).getTime();
+  return Number.isFinite(t) ? t : NaN;
+}
 
-  return (users ?? []).filter((u) => {
-    if (!u?.createdAt) return false;
-    const t = new Date(u.createdAt).getTime();
-    return Number.isFinite(t) && t >= start && t < end;
-  }).length;
+function pickBookingTime(b: BookingLike): number {
+  const candidates = [b.scheduledDate, b.scheduledAt, b.completedAt, b.createdAt, b.updatedAt];
+  for (const c of candidates) {
+    const t = safeTime(c);
+    if (Number.isFinite(t)) return t;
+  }
+  return NaN;
+}
+
+function isCompletedBooking(b: BookingLike) {
+  if (b.completedAt) return true;
+
+  const st = b.status;
+  if (typeof st === "string") {
+    const s = st.toLowerCase();
+    return (
+      s.includes("complete") ||
+      s.includes("completed") ||
+      s.includes("done") ||
+      s.includes("finish") ||
+      s.includes("success")
+    );
+  }
+
+  if (typeof st === "number") return st >= 3;
+  return false;
+}
+
+function getBookingAmount(b: BookingLike) {
+  const v = typeof b.finalAmount === "number" ? b.finalAmount : typeof b.amount === "number" ? b.amount : 0;
+
+  return Number.isFinite(v) ? v : 0;
+}
+
+function isSameDay(ms: number, day: Date) {
+  const d = new Date(ms);
+  return d.getFullYear() === day.getFullYear() && d.getMonth() === day.getMonth() && d.getDate() === day.getDate();
 }
 
 export type AdminTopCards = {
@@ -148,53 +206,49 @@ export function useAdminTopCards() {
     setError(null);
 
     try {
-      const today = new Date();
+      const today = startOfDay(new Date());
+      const from7 = addDays(today, -6);
 
-      // ===== 7 ngày gần nhất (local) =====
-      const from7 = new Date(today);
-      from7.setDate(today.getDate() - 6);
+      const scheduledFrom = toYmd(from7);
+      const scheduledTo = toYmd(today);
 
-      // NOTE quan trọng:
-      // Nhiều backend filter theo khoảng [from, to) hoặc cần scheduledTo > scheduledFrom
-      // => để chắc chắn "tính đủ hôm nay", scheduledTo nên là NGÀY MAI.
-      const scheduledFrom7 = toYmd(from7);
-      const scheduledTo7Exclusive = toYmd(new Date(today.getFullYear(), today.getMonth(), today.getDate() + 1));
-
-      // ===== hôm nay (local) =====
-      const todayFrom = toYmd(today);
-      const todayToExclusive = toYmd(new Date(today.getFullYear(), today.getMonth(), today.getDate() + 1));
-
-      const [bookings7d, bookingsToday, workers, users] = await Promise.all([
-        // bookings 7 ngày để tính revenue
-        adminApi.getAdminBookings({ scheduledFrom: scheduledFrom7, scheduledTo: scheduledTo7Exclusive }),
-        // bookings hôm nay để tính ordersToday (từ hôm nay đến ngày mai)
-        adminApi.getAdminBookings({ scheduledFrom: todayFrom, scheduledTo: todayToExclusive }),
-        // workers list
+      const [bookingsRes, workersRes, usersRes] = await Promise.all([
+        adminApi.getAdminBookings({ scheduledFrom, scheduledTo }).catch(() => adminApi.getAdminBookings()),
         workerApi.getWorkers(),
-        // users list
         identityApi.getUsers(),
       ]);
 
-      // ===== Revenue 7d =====
-      const revenue7d = (bookings7d ?? []).reduce((sum: number, b: BookingItem) => {
-        const v = typeof b.finalAmount === "number" ? b.finalAmount : typeof b.amount === "number" ? b.amount : 0;
-        return sum + (Number.isFinite(v) ? v : 0);
-      }, 0);
+      const bookings = asArray<BookingLike>(bookingsRes);
+      const workers = asArray<any>(workersRes);
+      const users = asArray<any>(usersRes);
 
-      // ===== Orders Today =====
-      const ordersToday = (bookingsToday ?? []).length;
+      const completed7d = bookings.filter((b) => {
+        const t = pickBookingTime(b);
+        return Number.isFinite(t) && t >= from7.getTime() && isCompletedBooking(b);
+      });
 
-      // ===== Active Workers =====
-      // Nếu backend có availabilityStatus thì lọc theo status phù hợp
-      const activeWorkers = (workers ?? []).length;
+      const revenue7d = completed7d.reduce((sum, b) => sum + getBookingAmount(b), 0);
 
-      // ===== New Users Today (local timezone) =====
-      const newUsersToday = countNewUsersToday(users ?? []);
+      const ordersToday = completed7d.filter((b) => {
+        const t = pickBookingTime(b);
+        return Number.isFinite(t) && isSameDay(t, today);
+      }).length;
 
-      setData({ revenue7d, ordersToday, activeWorkers, newUsersToday });
+      const activeWorkers = workers.length;
+
+      const newUsersToday = users.filter((u) => {
+        const t = safeTime(u?.createdAt);
+        return Number.isFinite(t) && isSameDay(t, today);
+      }).length;
+
+      setData({
+        revenue7d: Number.isFinite(revenue7d) ? revenue7d : 0,
+        ordersToday,
+        activeWorkers,
+        newUsersToday,
+      });
     } catch (e: any) {
       setError(e?.response?.data?.message || e?.message || "Fetch dashboard top cards failed");
-      // giữ data cũ để không nhảy 0
     } finally {
       setLoading(false);
     }
@@ -204,5 +258,10 @@ export function useAdminTopCards() {
     load();
   }, [load]);
 
-  return { ...data, loading, error, reload: load };
+  return {
+    ...data,
+    loading,
+    error,
+    reload: load,
+  };
 }

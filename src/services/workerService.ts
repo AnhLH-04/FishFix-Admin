@@ -213,4 +213,5 @@ export async function getWorkerReviews(workerId: string | number) {
   const res = await api.get(`/api/workers/${workerId}/reviews`);
   return res.data;
 }
+
 export default api;

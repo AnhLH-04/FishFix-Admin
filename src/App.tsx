@@ -14,7 +14,7 @@ import { NotFound } from "./components/admin/NotFound";
 import { UserLayout } from "./components/user/UserLayout";
 import { UserHome } from "./components/user/UserHome";
 import { UserServices } from "./components/user/UserServices";
-import UserServiceDetail from "./components/user/UserServiceDetail";
+import { UserServiceDetail } from "./components/user/UserServiceDetail";
 import { UserTechnicians } from "./components/user/UserTechnicians";
 import { UserBooking } from "./components/user/UserBooking";
 import { UserOrders } from "./components/user/UserOrders";
@@ -33,8 +33,6 @@ import { UserGuide } from "./components/user/UserGuide";
 import { TechnicianGuide } from "./components/user/TechnicianGuide";
 import { AuthProvider } from "./contexts/AuthContext";
 import { ProtectedRoute } from "./components/ProtectedRoute";
-import UserTechnicianProfile from "./components/user/UserTechnicianProfile";
-import MessagesPage from "./components/user/MessagesPage";
 
 export default function App() {
   return (
@@ -49,12 +47,11 @@ export default function App() {
             <Route path="services" element={<UserServices />} />
             <Route path="services/:category/:detailId" element={<UserServiceDetail />} />
             <Route path="technicians" element={<UserTechnicians />} />
-            <Route path="technicians/:id" element={<UserTechnicianProfile />} />
+
             <Route path="pricing" element={<PricingPage />} />
             <Route path="about" element={<AboutPage />} />
             <Route path="customer" element={<UserGuide />} />
             <Route path="technician" element={<TechnicianGuide />} />
-            <Route path="/messages" element={<MessagesPage />} />
 
             {/* Protected Routes - Yêu cầu đăng nhập */}
             <Route

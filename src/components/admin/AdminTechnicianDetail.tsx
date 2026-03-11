@@ -425,7 +425,7 @@ export function AdminTechnicianDetail() {
         </div>
       </div>
 
-      {/* Stats Overview */}
+      {/* Stats Overview. */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
         <Card className="border-0 shadow-lg bg-gradient-to-br from-yellow-50 to-amber-50">
           <CardContent className="p-4">
