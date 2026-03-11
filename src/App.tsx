@@ -51,7 +51,7 @@ export default function App() {
             <Route path="services" element={<UserServices />} />
             <Route path="services/:category/:detailId" element={<UserServiceDetail />} />
             <Route path="technicians" element={<UserTechnicians />} />
-            <Route path="technicians/:id" element={<UserTechnicianProfile />} />
+
             <Route path="pricing" element={<PricingPage />} />
             <Route path="about" element={<AboutPage />} />
             <Route path="download" element={<AppDownload />} />
@@ -110,7 +110,7 @@ export default function App() {
             />
           </Route>
 
-          {/* Auth Routes */}
+          {/* Auth Routes .*/}
           <Route path="/register" element={<UserRegister />} />
           <Route path="/admin/login" element={<AdminLogin />} />
           <Route path="/forgot-password" element={<ForgotPassword />} />
