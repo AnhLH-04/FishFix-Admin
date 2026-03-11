@@ -845,6 +845,101 @@ export function UserHome() {
         </div>
       </section>
 
+      {/* App Download CTA Section */}
+      <section className="py-20 bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 relative overflow-hidden">
+        {/* Animated background elements */}
+        <div className="absolute top-0 left-0 w-full h-full opacity-10">
+          <div className="absolute top-10 left-10 w-72 h-72 bg-white rounded-full blur-3xl animate-pulse"></div>
+          <div className="absolute bottom-10 right-10 w-96 h-96 bg-white rounded-full blur-3xl animate-pulse animation-delay-2000"></div>
+        </div>
+
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
+          <div className="grid md:grid-cols-2 gap-12 items-center">
+            {/* Left: Content */}
+            <div className="text-white space-y-6">
+              <div className="inline-flex items-center gap-2 bg-white/20 backdrop-blur-sm px-4 py-2 rounded-full">
+                <Smartphone className="w-5 h-5" />
+                <span className="text-sm font-semibold">Ứng dụng Mobile</span>
+              </div>
+
+              <h2 className="text-4xl md:text-5xl font-black leading-tight">
+                Trải nghiệm tốt hơn <br />
+                trên ứng dụng di động
+              </h2>
+
+              <p className="text-lg text-blue-100">
+                Tải app ngay để nhận ưu đãi đặc biệt, theo dõi thợ real-time và đặt lịch nhanh chóng hơn bao giờ hết.
+              </p>
+
+              {/* Features */}
+              <ul className="space-y-3">
+                {[
+                  'Đặt lịch nhanh chóng chỉ với vài chạm',
+                  'Theo dõi vị trí thợ real-time',
+                  'Nhận thông báo ngay lập tức',
+                  'Thanh toán an toàn và tiện lợi'
+                ].map((feature, index) => (
+                  <li key={index} className="flex items-center gap-3">
+                    <CheckCircle className="w-5 h-5 text-green-300 flex-shrink-0" />
+                    <span className="text-blue-50">{feature}</span>
+                  </li>
+                ))}
+              </ul>
+
+              {/* Download Button */}
+              <Link to="/download">
+                <Button 
+                  size="lg"
+                  className="bg-white text-blue-600 hover:bg-gray-100 font-bold px-8 py-6 text-lg shadow-xl hover:shadow-2xl transition-all group"
+                >
+                  <Smartphone className="w-5 h-5 mr-2 group-hover:scale-110 transition-transform" />
+                  Tải xuống ngay
+                  <ArrowRight className="w-5 h-5 ml-2 group-hover:translate-x-1 transition-transform" />
+                </Button>
+              </Link>
+            </div>
+
+            {/* Right: App Mockup */}
+            <div className="relative">
+              {/* Floating phone mockup */}
+              <div className="relative z-10 transform hover:scale-105 transition-transform duration-500">
+                <div className="relative w-full max-w-sm mx-auto">
+                  {/* Phone frame */}
+                  <div className="relative bg-gray-900 rounded-[3rem] p-3 shadow-2xl">
+                    <div className="bg-white rounded-[2.5rem] overflow-hidden">
+                      {/* Notch */}
+                      <div className="h-6 bg-gray-900 relative">
+                        <div className="absolute top-0 left-1/2 transform -translate-x-1/2 w-32 h-6 bg-gray-900 rounded-b-3xl"></div>
+                      </div>
+                      
+                      {/* Screen content */}
+                      <div className="aspect-[9/16] bg-gradient-to-br from-blue-50 to-purple-50 flex items-center justify-center">
+                        <div className="text-center p-8">
+                          <Smartphone className="w-20 h-20 text-blue-600 mx-auto mb-4" />
+                          <h3 className="text-xl font-bold text-gray-900 mb-2">FishFix App</h3>
+                          <p className="text-sm text-gray-600">Sửa chữa nhanh chóng</p>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Floating elements */}
+                  <div className="absolute -top-4 -right-4 bg-green-500 text-white px-4 py-2 rounded-full text-sm font-bold shadow-lg animate-bounce">
+                    Miễn phí
+                  </div>
+                  <div className="absolute -bottom-4 -left-4 bg-yellow-400 text-gray-900 px-4 py-2 rounded-full text-sm font-bold shadow-lg">
+                    ⭐ 4.9/5
+                  </div>
+                </div>
+              </div>
+
+              {/* Background decoration */}
+              <div className="absolute inset-0 bg-gradient-to-br from-white/10 to-transparent rounded-3xl transform rotate-6"></div>
+            </div>
+          </div>
+        </div>
+      </section>
+
       {/* Active Technicians Map Section */}
       <section 
         ref={mapSection.ref}
