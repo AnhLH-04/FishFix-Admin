@@ -33,6 +33,10 @@ import { UserGuide } from "./components/user/UserGuide";
 import { TechnicianGuide } from "./components/user/TechnicianGuide";
 import { AuthProvider } from "./contexts/AuthContext";
 import { ProtectedRoute } from "./components/ProtectedRoute";
+import { UserTechnicianProfile } from "./components/user/UserTechnicianProfile";
+import { AppDownload } from "./components/user/AppDownload";
+// import UserTechnicianProfile from "./components/user/UserTechnicianProfile";
+// import MessagesPage from "./components/user/MessagesPage";
 
 export default function App() {
   return (
@@ -50,8 +54,10 @@ export default function App() {
 
             <Route path="pricing" element={<PricingPage />} />
             <Route path="about" element={<AboutPage />} />
+            <Route path="download" element={<AppDownload />} />
             <Route path="customer" element={<UserGuide />} />
             <Route path="technician" element={<TechnicianGuide />} />
+            {/* <Route path="/messages" element={<MessagesPage />} /> */}
 
             {/* Protected Routes - Yêu cầu đăng nhập */}
             <Route

@@ -79,6 +79,7 @@ export function UserLayout() {
   const navItems = [
     { path: '/', label: 'Trang Chủ', icon: Home },
     { path: '/about', label: 'Về Chúng Tôi', icon: Users },
+    { path: '/download', label: 'Tải App', icon: Phone },
     { path: '/customer', label: 'Khách Hàng', icon: Users },
     { path: '/technician', label: 'Thợ', icon: Users },
     // { path: '/pricing', label: 'Bảng Giá', icon: Calendar },
