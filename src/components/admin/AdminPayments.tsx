@@ -1,122 +1,107 @@
-import { useState } from 'react';
-import { DollarSign, TrendingUp, CreditCard, Download } from 'lucide-react';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '../ui/card';
-import { Button } from '../ui/button';
-import { Badge } from '../ui/badge';
+import { useState } from "react";
+import { DollarSign, TrendingUp, CreditCard, Download } from "lucide-react";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "../ui/card";
+import { Button } from "../ui/button";
+import { Badge } from "../ui/badge";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "../ui/table";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../ui/select";
 import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '../ui/table';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '../ui/select';
-import { 
-  LineChart, 
-  Line, 
+  LineChart,
+  Line,
   BarChart,
   Bar,
-  XAxis, 
-  YAxis, 
-  CartesianGrid, 
-  Tooltip, 
-  Legend, 
-  ResponsiveContainer 
-} from 'recharts';
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  Legend,
+  ResponsiveContainer,
+} from "recharts";
 
 const revenueData = [
-  { date: '20/10', revenue: 12500000, commission: 1875000, orders: 45 },
-  { date: '21/10', revenue: 15200000, commission: 2280000, orders: 52 },
-  { date: '22/10', revenue: 13800000, commission: 2070000, orders: 48 },
-  { date: '23/10', revenue: 18500000, commission: 2775000, orders: 61 },
-  { date: '24/10', revenue: 16900000, commission: 2535000, orders: 57 },
-  { date: '25/10', revenue: 21300000, commission: 3195000, orders: 68 },
-  { date: '26/10', revenue: 19800000, commission: 2970000, orders: 64 },
+  { date: "20/10", revenue: 12500000, commission: 1875000, orders: 45 },
+  { date: "21/10", revenue: 15200000, commission: 2280000, orders: 52 },
+  { date: "22/10", revenue: 13800000, commission: 2070000, orders: 48 },
+  { date: "23/10", revenue: 18500000, commission: 2775000, orders: 61 },
+  { date: "24/10", revenue: 16900000, commission: 2535000, orders: 57 },
+  { date: "25/10", revenue: 21300000, commission: 3195000, orders: 68 },
+  { date: "26/10", revenue: 19800000, commission: 2970000, orders: 64 },
 ];
 
 const transactions = [
   {
-    id: 'PAY-1245',
-    orderId: '#1245',
-    customer: 'Nguyễn Văn A',
-    technician: 'Trần Minh B',
+    id: "PAY-1245",
+    orderId: "#1245",
+    customer: "Nguyễn Văn A",
+    technician: "Trần Minh B",
     amount: 350000,
     commission: 52500,
-    method: 'Tiền mặt',
-    status: 'completed',
-    date: '29/10/2025 13:00',
+    method: "Tiền mặt",
+    status: "completed",
+    date: "29/10/2025 13:00",
   },
   {
-    id: 'PAY-1244',
-    orderId: '#1244',
-    customer: 'Trần Thị B',
-    technician: 'Nguyễn Văn A',
+    id: "PAY-1244",
+    orderId: "#1244",
+    customer: "Trần Thị B",
+    technician: "Nguyễn Văn A",
     amount: 500000,
     commission: 75000,
-    method: 'Chuyển khoản',
-    status: 'completed',
-    date: '29/10/2025 11:30',
+    method: "Chuyển khoản",
+    status: "completed",
+    date: "29/10/2025 11:30",
   },
   {
-    id: 'PAY-1243',
-    orderId: '#1243',
-    customer: 'Lê Minh C',
-    technician: 'Lê Hoàng C',
+    id: "PAY-1243",
+    orderId: "#1243",
+    customer: "Lê Minh C",
+    technician: "Lê Hoàng C",
     amount: 280000,
     commission: 42000,
-    method: 'Ví điện tử',
-    status: 'processing',
-    date: '29/10/2025 10:15',
+    method: "Ví điện tử",
+    status: "processing",
+    date: "29/10/2025 10:15",
   },
   {
-    id: 'PAY-1242',
-    orderId: '#1242',
-    customer: 'Phạm Hoàng D',
-    technician: 'Nguyễn Văn A',
+    id: "PAY-1242",
+    orderId: "#1242",
+    customer: "Phạm Hoàng D",
+    technician: "Nguyễn Văn A",
     amount: 420000,
     commission: 63000,
-    method: 'Thẻ tín dụng',
-    status: 'completed',
-    date: '29/10/2025 09:45',
+    method: "Thẻ tín dụng",
+    status: "completed",
+    date: "29/10/2025 09:45",
   },
   {
-    id: 'PAY-1241',
-    orderId: '#1241',
-    customer: 'Vũ Thu E',
+    id: "PAY-1241",
+    orderId: "#1241",
+    customer: "Vũ Thu E",
     technician: null,
     amount: 200000,
     commission: 0,
-    method: 'Tiền mặt',
-    status: 'refunded',
-    date: '28/10/2025 16:30',
+    method: "Tiền mặt",
+    status: "refunded",
+    date: "28/10/2025 16:30",
   },
 ];
 
 export function AdminPayments() {
-  const [timeFilter, setTimeFilter] = useState('week');
+  const [timeFilter, setTimeFilter] = useState("week");
 
-  const totalRevenue = transactions
-    .filter(t => t.status === 'completed')
-    .reduce((sum, t) => sum + t.amount, 0);
+  const totalRevenue = transactions.filter((t) => t.status === "completed").reduce((sum, t) => sum + t.amount, 0);
 
   const totalCommission = transactions
-    .filter(t => t.status === 'completed')
+    .filter((t) => t.status === "completed")
     .reduce((sum, t) => sum + t.commission, 0);
 
   const getStatusBadge = (status: string) => {
     switch (status) {
-      case 'completed':
+      case "completed":
         return <Badge className="bg-green-500">Thành công</Badge>;
-      case 'processing':
+      case "processing":
         return <Badge className="bg-orange-500">Đang xử lý</Badge>;
-      case 'refunded':
+      case "refunded":
         return <Badge className="bg-blue-500">Đã hoàn tiền</Badge>;
       default:
         return <Badge variant="outline">{status}</Badge>;
@@ -125,12 +110,12 @@ export function AdminPayments() {
 
   const getMethodBadge = (method: string) => {
     const colors: Record<string, string> = {
-      'Tiền mặt': 'bg-gray-600',
-      'Chuyển khoản': 'bg-blue-600',
-      'Ví điện tử': 'bg-purple-600',
-      'Thẻ tín dụng': 'bg-pink-600',
+      "Tiền mặt": "bg-gray-600",
+      "Chuyển khoản": "bg-blue-600",
+      "Ví điện tử": "bg-purple-600",
+      "Thẻ tín dụng": "bg-pink-600",
     };
-    return <Badge className={colors[method] || 'bg-gray-600'}>{method}</Badge>;
+    return <Badge className={colors[method] || "bg-gray-600"}>{method}</Badge>;
   };
 
   return (
@@ -196,7 +181,7 @@ export function AdminPayments() {
             </div>
             <p className="text-gray-600 text-sm mb-1">Giá trị TB/đơn</p>
             <p className="text-3xl text-orange-600">
-              ₫{Math.round(totalRevenue / transactions.filter(t => t.status === 'completed').length).toLocaleString()}
+              ₫{Math.round(totalRevenue / transactions.filter((t) => t.status === "completed").length).toLocaleString()}
             </p>
           </CardContent>
         </Card>
@@ -232,20 +217,8 @@ export function AdminPayments() {
                 <YAxis />
                 <Tooltip />
                 <Legend />
-                <Line 
-                  type="monotone" 
-                  dataKey="revenue" 
-                  stroke="#10B981" 
-                  strokeWidth={3}
-                  name="Doanh thu"
-                />
-                <Line 
-                  type="monotone" 
-                  dataKey="commission" 
-                  stroke="#007BFF" 
-                  strokeWidth={3}
-                  name="Hoa hồng"
-                />
+                <Line type="monotone" dataKey="revenue" stroke="#10B981" strokeWidth={3} name="Doanh thu" />
+                <Line type="monotone" dataKey="commission" stroke="#007BFF" strokeWidth={3} name="Hoa hồng" />
               </LineChart>
             </ResponsiveContainer>
           </CardContent>
@@ -282,28 +255,28 @@ export function AdminPayments() {
             <div className="p-4 bg-gray-50 rounded-lg">
               <p className="text-sm text-gray-600 mb-1">Tiền mặt</p>
               <p className="text-2xl">
-                {transactions.filter(t => t.method === 'Tiền mặt' && t.status === 'completed').length}
+                {transactions.filter((t) => t.method === "Tiền mặt" && t.status === "completed").length}
               </p>
               <p className="text-xs text-gray-500 mt-1">Giao dịch</p>
             </div>
             <div className="p-4 bg-blue-50 rounded-lg">
               <p className="text-sm text-gray-600 mb-1">Chuyển khoản</p>
               <p className="text-2xl text-blue-600">
-                {transactions.filter(t => t.method === 'Chuyển khoản' && t.status === 'completed').length}
+                {transactions.filter((t) => t.method === "Chuyển khoản" && t.status === "completed").length}
               </p>
               <p className="text-xs text-gray-500 mt-1">Giao dịch</p>
             </div>
             <div className="p-4 bg-purple-50 rounded-lg">
               <p className="text-sm text-gray-600 mb-1">Ví điện tử</p>
               <p className="text-2xl text-purple-600">
-                {transactions.filter(t => t.method === 'Ví điện tử' && t.status === 'completed').length}
+                {transactions.filter((t) => t.method === "Ví điện tử" && t.status === "completed").length}
               </p>
               <p className="text-xs text-gray-500 mt-1">Giao dịch</p>
             </div>
             <div className="p-4 bg-pink-50 rounded-lg">
               <p className="text-sm text-gray-600 mb-1">Thẻ tín dụng</p>
               <p className="text-2xl text-pink-600">
-                {transactions.filter(t => t.method === 'Thẻ tín dụng' && t.status === 'completed').length}
+                {transactions.filter((t) => t.method === "Thẻ tín dụng" && t.status === "completed").length}
               </p>
               <p className="text-xs text-gray-500 mt-1">Giao dịch</p>
             </div>
@@ -335,29 +308,17 @@ export function AdminPayments() {
             <TableBody>
               {transactions.map((transaction) => (
                 <TableRow key={transaction.id} className="hover:bg-blue-50 transition-colors">
-                  <TableCell className="font-medium text-[#007BFF]">
-                    {transaction.id}
-                  </TableCell>
+                  <TableCell className="font-medium text-[#007BFF]">{transaction.id}</TableCell>
                   <TableCell className="font-medium">{transaction.orderId}</TableCell>
                   <TableCell>{transaction.customer}</TableCell>
-                  <TableCell>
-                    {transaction.technician || <span className="text-gray-400">-</span>}
-                  </TableCell>
-                  <TableCell className="font-medium text-green-600">
-                    ₫{transaction.amount.toLocaleString()}
-                  </TableCell>
+                  <TableCell>{transaction.technician || <span className="text-gray-400">-</span>}</TableCell>
+                  <TableCell className="font-medium text-green-600">₫{transaction.amount.toLocaleString()}</TableCell>
                   <TableCell className="font-medium text-blue-600">
                     ₫{transaction.commission.toLocaleString()}
                   </TableCell>
-                  <TableCell>
-                    {getMethodBadge(transaction.method)}
-                  </TableCell>
-                  <TableCell className="text-center">
-                    {getStatusBadge(transaction.status)}
-                  </TableCell>
-                  <TableCell className="text-sm text-gray-600">
-                    {transaction.date}
-                  </TableCell>
+                  <TableCell>{getMethodBadge(transaction.method)}</TableCell>
+                  <TableCell className="text-center">{getStatusBadge(transaction.status)}</TableCell>
+                  <TableCell className="text-sm text-gray-600">{transaction.date}</TableCell>
                 </TableRow>
               ))}
             </TableBody>
