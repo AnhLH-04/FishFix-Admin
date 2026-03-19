@@ -1,5 +1,6 @@
 import { useState, useEffect, useMemo } from "react";
 import { useParams, useNavigate } from "react-router-dom";
+import { motion, AnimatePresence } from "framer-motion";
 import {
   ArrowLeft,
   Save,
@@ -367,29 +368,77 @@ export function AdminTechnicianDetail() {
     }
   }
 
+  const pageVariants = {
+    hidden: { opacity: 0, y: 12 },
+    visible: {
+      opacity: 1,
+      y: 0,
+      transition: { duration: 0.35, ease: [0.25, 0.46, 0.45, 0.94] },
+    },
+  };
+  const staggerContainer = {
+    visible: { transition: { staggerChildren: 0.06 } },
+  };
+  const cardItem = {
+    hidden: { opacity: 0, y: 16 },
+    visible: { opacity: 1, y: 0, transition: { duration: 0.4, ease: "easeOut" } },
+  };
+  const listItem = {
+    hidden: { opacity: 0, x: -8 },
+    visible: (i: number) => ({
+      opacity: 1,
+      x: 0,
+      transition: { delay: i * 0.04, duration: 0.3 },
+    }),
+  };
+
   if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-[60vh]">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600" />
-      </div>
+      <motion.div
+        className="flex items-center justify-center min-h-[60vh]"
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ duration: 0.2 }}
+      >
+        <motion.div
+          animate={{ rotate: 360 }}
+          transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+          className="rounded-full h-12 w-12 border-2 border-primary border-t-transparent"
+        />
+      </motion.div>
     );
   }
 
   if (!worker) {
     return (
-      <div className="text-center py-12">
-        <h2 className="text-xl font-medium text-gray-600">Không tìm thấy thông tin thợ</h2>
-        <Button className="mt-4" onClick={() => navigate("/admin/technicians")}>
-          Quay lại danh sách
-        </Button>
-      </div>
+      <motion.div
+        className="text-center py-12"
+        initial={{ opacity: 0, y: 16 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.3 }}
+      >
+        <h2 className="text-xl font-medium text-muted-foreground">Không tìm thấy thông tin thợ</h2>
+        <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
+          <Button className="mt-4" onClick={() => navigate("/admin/technicians")}>
+            Quay lại danh sách
+          </Button>
+        </motion.div>
+      </motion.div>
     );
   }
 
   return (
-    <div className="space-y-6 animate-slide-up">
+    <motion.div
+      className="space-y-6"
+      variants={pageVariants}
+      initial="hidden"
+      animate="visible"
+    >
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <motion.div
+        className="flex items-center justify-between flex-wrap gap-4"
+        variants={cardItem}
+      >
         <div className="flex items-center gap-4">
           <Button variant="ghost" onClick={() => navigate("/admin/technicians")}>
             <ArrowLeft className="w-4 h-4 mr-2" />
@@ -411,112 +460,169 @@ export function AdminTechnicianDetail() {
           </div>
         </div>
         <div className="flex gap-2">
-          {!worker.isVerified ? (
-            <Button className="bg-green-500 hover:bg-green-600" onClick={handleVerifyWorker}>
-              <CheckCircle className="w-4 h-4 mr-2" />
-              Xác minh thợ
-            </Button>
-          ) : (
-            <Badge className="bg-green-500 px-4 py-2">
-              <Shield className="w-4 h-4 mr-2" />
-              Đã xác minh
-            </Badge>
-          )}
+          <AnimatePresence mode="wait">
+            {!worker.isVerified ? (
+              <motion.div
+                key="verify-btn"
+                initial={{ opacity: 0, scale: 0.95 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0, scale: 0.95 }}
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
+              >
+                <Button className="bg-green-500 hover:bg-green-600" onClick={handleVerifyWorker}>
+                  <CheckCircle className="w-4 h-4 mr-2" />
+                  Xác minh thợ
+                </Button>
+              </motion.div>
+            ) : (
+              <motion.div
+                key="verified-badge"
+                initial={{ opacity: 0, scale: 0.95 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0, scale: 0.95 }}
+              >
+                <Badge className="bg-green-500 px-4 py-2 dark:bg-green-600">
+                  <Shield className="w-4 h-4 mr-2" />
+                  Đã xác minh
+                </Badge>
+              </motion.div>
+            )}
+          </AnimatePresence>
         </div>
-      </div>
+      </motion.div>
 
-      {/* Stats Overview. */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <Card className="border-0 shadow-lg bg-gradient-to-br from-yellow-50 to-amber-50">
-          <CardContent className="p-4">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 bg-yellow-500 rounded-full flex items-center justify-center">
-                <Star className="w-5 h-5 text-white fill-white" />
-              </div>
-              <div>
-                {/* ✅ FIX: luôn lấy từ reviews để không còn 0.0 */}
-                <p className="text-2xl font-bold text-yellow-700">{reviewStats.avg.toFixed(1)}</p>
-                <p className="text-xs text-gray-600">{reviewStats.count} đánh giá</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+      {/* Stats Overview */}
+      <motion.div
+        className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4"
+        variants={staggerContainer}
+        initial="hidden"
+        animate="visible"
+      >
+        <motion.div variants={cardItem}>
+          <motion.div
+            whileHover={{ y: -2 }}
+            transition={{ type: "spring", stiffness: 400, damping: 25 }}
+          >
+            <Card className="shadow-lg bg-gradient-to-br from-yellow-50 to-amber-50 dark:from-yellow-950/40 dark:to-amber-950/30 border border-yellow-200/50 dark:border-yellow-800/30 rounded-xl overflow-hidden">
+              <CardContent className="p-4">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 bg-yellow-500 rounded-full flex items-center justify-center shadow-md">
+                    <Star className="w-5 h-5 text-white fill-white" />
+                  </div>
+                  <div>
+                    <p className="text-2xl font-bold text-yellow-700 dark:text-yellow-400">{reviewStats.avg.toFixed(1)}</p>
+                    <p className="text-xs text-muted-foreground">{reviewStats.count} đánh giá</p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </motion.div>
+        </motion.div>
 
-        <Card className="border-0 shadow-lg bg-gradient-to-br from-blue-50 to-cyan-50">
-          <CardContent className="p-4">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 bg-blue-500 rounded-full flex items-center justify-center">
-                <Award className="w-5 h-5 text-white" />
-              </div>
-              <div>
-                <p className="text-2xl font-bold text-blue-700">{worker.completedJobs}</p>
-                <p className="text-xs text-gray-600">việc hoàn thành</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+        <motion.div variants={cardItem}>
+          <motion.div
+            whileHover={{ y: -2 }}
+            transition={{ type: "spring", stiffness: 400, damping: 25 }}
+          >
+            <Card className="shadow-lg bg-gradient-to-br from-blue-50 to-cyan-50 dark:from-blue-950/40 dark:to-cyan-950/30 border border-blue-200/50 dark:border-blue-800/30 rounded-xl overflow-hidden">
+              <CardContent className="p-4">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 bg-blue-500 rounded-full flex items-center justify-center shadow-md">
+                    <Award className="w-5 h-5 text-white" />
+                  </div>
+                  <div>
+                    <p className="text-2xl font-bold text-blue-700 dark:text-blue-400">{worker.completedJobs}</p>
+                    <p className="text-xs text-muted-foreground">việc hoàn thành</p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </motion.div>
+        </motion.div>
 
-        <Card className="border-0 shadow-lg bg-gradient-to-br from-green-50 to-emerald-50">
-          <CardContent className="p-4">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 bg-green-500 rounded-full flex items-center justify-center">
-                <Clock className="w-5 h-5 text-white" />
-              </div>
-              <div>
-                <p className="text-2xl font-bold text-green-700">{worker.responseTimeMinutes || 0}p</p>
-                <p className="text-xs text-gray-600">phản hồi TB</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+        <motion.div variants={cardItem}>
+          <motion.div
+            whileHover={{ y: -2 }}
+            transition={{ type: "spring", stiffness: 400, damping: 25 }}
+          >
+            <Card className="shadow-lg bg-gradient-to-br from-green-50 to-emerald-50 dark:from-green-950/40 dark:to-emerald-950/30 border border-green-200/50 dark:border-green-800/30 rounded-xl overflow-hidden">
+              <CardContent className="p-4">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 bg-green-500 rounded-full flex items-center justify-center shadow-md">
+                    <Clock className="w-5 h-5 text-white" />
+                  </div>
+                  <div>
+                    <p className="text-2xl font-bold text-green-700 dark:text-green-400">{worker.responseTimeMinutes || 0}p</p>
+                    <p className="text-xs text-muted-foreground">phản hồi TB</p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </motion.div>
+        </motion.div>
 
-        <Card className="border-0 shadow-lg bg-gradient-to-br from-purple-50 to-pink-50">
-          <CardContent className="p-4">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 bg-purple-500 rounded-full flex items-center justify-center">
-                <MapPin className="w-5 h-5 text-white" />
-              </div>
-              <div>
-                <p className="text-2xl font-bold text-purple-700">{worker.workingRadiusKm} km</p>
-                <p className="text-xs text-gray-600">bán kính làm việc</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
+        <motion.div variants={cardItem}>
+          <motion.div
+            whileHover={{ y: -2 }}
+            transition={{ type: "spring", stiffness: 400, damping: 25 }}
+          >
+            <Card className="shadow-lg bg-gradient-to-br from-purple-50 to-pink-50 dark:from-purple-950/40 dark:to-pink-950/30 border border-purple-200/50 dark:border-purple-800/30 rounded-xl overflow-hidden">
+              <CardContent className="p-4">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 bg-purple-500 rounded-full flex items-center justify-center shadow-md">
+                    <MapPin className="w-5 h-5 text-white" />
+                  </div>
+                  <div>
+                    <p className="text-2xl font-bold text-purple-700 dark:text-purple-400">{worker.workingRadiusKm} km</p>
+                    <p className="text-xs text-muted-foreground">bán kính làm việc</p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </motion.div>
+        </motion.div>
+      </motion.div>
 
       {/* Tabs */}
       <Tabs defaultValue="profile" className="space-y-6">
-        <TabsList className="bg-white shadow-lg p-1">
-          <TabsTrigger value="profile" className="data-[state=active]:bg-blue-500 data-[state=active]:text-white">
-            <User className="w-4 h-4 mr-2" />
-            Thông tin
-          </TabsTrigger>
-
-          <TabsTrigger value="reviews" className="data-[state=active]:bg-blue-500 data-[state=active]:text-white">
-            <Star className="w-4 h-4 mr-2" />
-            Đánh giá ({reviews.length})
-          </TabsTrigger>
-
-          <TabsTrigger value="kyc" className="data-[state=active]:bg-blue-500 data-[state=active]:text-white">
-            <FileText className="w-4 h-4 mr-2" />
-            Xác thực KYC
-          </TabsTrigger>
-
-          <TabsTrigger value="bank" className="data-[state=active]:bg-blue-500 data-[state=active]:text-white">
-            <Building2 className="w-4 h-4 mr-2" />
-            Ngân hàng
-          </TabsTrigger>
-
-          <TabsTrigger value="certs" className="data-[state=active]:bg-blue-500 data-[state=active]:text-white">
-            <Award className="w-4 h-4 mr-2" />
-            Chứng chỉ ({certifications.length})
-          </TabsTrigger>
-        </TabsList>
+        <motion.div
+          initial={{ opacity: 0, y: 8 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.1, duration: 0.3 }}
+        >
+          <TabsList className="bg-muted/50 dark:bg-muted/30 shadow-sm p-1 rounded-xl border border-border/50">
+            <TabsTrigger value="profile" className="rounded-lg data-[state=active]:bg-blue-500 data-[state=active]:text-white">
+              <User className="w-4 h-4 mr-2" />
+              Thông tin
+            </TabsTrigger>
+            <TabsTrigger value="reviews" className="rounded-lg data-[state=active]:bg-blue-500 data-[state=active]:text-white">
+              <Star className="w-4 h-4 mr-2" />
+              Đánh giá ({reviews.length})
+            </TabsTrigger>
+            <TabsTrigger value="kyc" className="rounded-lg data-[state=active]:bg-blue-500 data-[state=active]:text-white">
+              <FileText className="w-4 h-4 mr-2" />
+              Xác thực KYC
+            </TabsTrigger>
+            <TabsTrigger value="bank" className="rounded-lg data-[state=active]:bg-blue-500 data-[state=active]:text-white">
+              <Building2 className="w-4 h-4 mr-2" />
+              Ngân hàng
+            </TabsTrigger>
+            <TabsTrigger value="certs" className="rounded-lg data-[state=active]:bg-blue-500 data-[state=active]:text-white">
+              <Award className="w-4 h-4 mr-2" />
+              Chứng chỉ ({certifications.length})
+            </TabsTrigger>
+          </TabsList>
+        </motion.div>
 
         {/* Tab 1: Profile */}
         <TabsContent value="profile">
-          <Card className="border-0 shadow-lg">
+          <motion.div
+            initial={{ opacity: 0, y: 8 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.25 }}
+          >
+          <Card className="shadow-lg rounded-xl overflow-hidden border border-border/50">
             <CardHeader>
               <CardTitle>Thông tin cơ bản</CardTitle>
               <CardDescription>Thông tin hồ sơ và cài đặt hoạt động</CardDescription>
@@ -600,11 +706,17 @@ export function AdminTechnicianDetail() {
               </div>
             </CardContent>
           </Card>
+          </motion.div>
         </TabsContent>
 
-        {/* ✅ Tab: Reviews */}
+        {/* Tab: Reviews */}
         <TabsContent value="reviews">
-          <Card className="border-0 shadow-lg">
+          <motion.div
+            initial={{ opacity: 0, y: 8 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.25 }}
+          >
+          <Card className="shadow-lg rounded-xl overflow-hidden border border-border/50">
             <CardHeader className="flex flex-row items-center justify-between">
               <div>
                 <CardTitle>Đánh giá</CardTitle>
@@ -639,9 +751,21 @@ export function AdminTechnicianDetail() {
               )}
 
               {!reviewsLoading && reviews.length > 0 && (
-                <div className="space-y-4">
+                <motion.div
+                  className="space-y-4"
+                  variants={staggerContainer}
+                  initial="hidden"
+                  animate="visible"
+                >
                   {reviews.map((r, idx) => (
-                    <div key={String((r as any).id ?? idx)} className="p-4 border rounded-lg hover:bg-gray-50">
+                    <motion.div
+                      key={String((r as any).id ?? idx)}
+                      variants={listItem}
+                      custom={idx}
+                      className="p-4 border border-border/50 rounded-xl hover:bg-muted/30 dark:hover:bg-muted/20 transition-colors duration-200"
+                      whileHover={{ x: 4 }}
+                      transition={{ type: "spring", stiffness: 400, damping: 30 }}
+                    >
                       <div className="flex items-start justify-between gap-4">
                         <div>
                           <div className="flex items-center gap-2">
@@ -664,17 +788,23 @@ export function AdminTechnicianDetail() {
                           <p className="text-sm text-gray-400">(Không có comment)</p>
                         )}
                       </div>
-                    </div>
+                    </motion.div>
                   ))}
-                </div>
+                </motion.div>
               )}
             </CardContent>
           </Card>
+          </motion.div>
         </TabsContent>
 
         {/* Tab 2: KYC */}
         <TabsContent value="kyc">
-          <Card className="border-0 shadow-lg">
+          <motion.div
+            initial={{ opacity: 0, y: 8 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.25 }}
+          >
+          <Card className="shadow-lg rounded-xl overflow-hidden border border-border/50">
             <CardHeader>
               <CardTitle>Xác thực danh tính (KYC)</CardTitle>
               <CardDescription>Thông tin CMND/CCCD để xác minh danh tính</CardDescription>
@@ -785,11 +915,17 @@ export function AdminTechnicianDetail() {
               </div>
             </CardContent>
           </Card>
+          </motion.div>
         </TabsContent>
 
         {/* Tab 3: Bank */}
         <TabsContent value="bank">
-          <Card className="border-0 shadow-lg">
+          <motion.div
+            initial={{ opacity: 0, y: 8 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.25 }}
+          >
+          <Card className="shadow-lg rounded-xl overflow-hidden border border-border/50">
             <CardHeader>
               <CardTitle>Thông tin ngân hàng</CardTitle>
               <CardDescription>Tài khoản nhận thanh toán</CardDescription>
@@ -836,11 +972,17 @@ export function AdminTechnicianDetail() {
               </div>
             </CardContent>
           </Card>
+          </motion.div>
         </TabsContent>
 
         {/* Tab 4: Certifications */}
         <TabsContent value="certs">
-          <Card className="border-0 shadow-lg">
+          <motion.div
+            initial={{ opacity: 0, y: 8 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.25 }}
+          >
+          <Card className="shadow-lg rounded-xl overflow-hidden border border-border/50">
             <CardHeader className="flex flex-row items-center justify-between">
               <div>
                 <CardTitle>Chứng chỉ</CardTitle>
@@ -858,11 +1000,20 @@ export function AdminTechnicianDetail() {
                   <p>Chưa có chứng chỉ nào</p>
                 </div>
               ) : (
-                <div className="space-y-4">
-                  {certifications.map((cert) => (
-                    <div
+                <motion.div
+                  className="space-y-4"
+                  variants={staggerContainer}
+                  initial="hidden"
+                  animate="visible"
+                >
+                  {certifications.map((cert, idx) => (
+                    <motion.div
                       key={cert.certId}
-                      className="flex items-center justify-between p-4 border rounded-lg hover:bg-gray-50"
+                      variants={listItem}
+                      custom={idx}
+                      className="flex items-center justify-between p-4 border border-border/50 rounded-xl hover:bg-muted/30 dark:hover:bg-muted/20 transition-colors duration-200"
+                      whileHover={{ x: 4 }}
+                      transition={{ type: "spring", stiffness: 400, damping: 30 }}
                     >
                       <div className="flex items-center gap-4">
                         <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center">
@@ -920,12 +1071,13 @@ export function AdminTechnicianDetail() {
                           <Trash2 className="w-4 h-4" />
                         </Button>
                       </div>
-                    </div>
+                    </motion.div>
                   ))}
-                </div>
+                </motion.div>
               )}
             </CardContent>
           </Card>
+          </motion.div>
         </TabsContent>
       </Tabs>
 
@@ -1059,6 +1211,6 @@ export function AdminTechnicianDetail() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-    </div>
+    </motion.div>
   );
 }

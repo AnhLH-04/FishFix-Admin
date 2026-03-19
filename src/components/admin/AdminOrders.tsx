@@ -1,12 +1,14 @@
-import { useEffect, useMemo, useState } from "react";
-import { Search, Eye, MapPin, Clock, CheckCircle, XCircle, Loader } from "lucide-react";
-import { Card, CardContent } from "../ui/card";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { AnimatePresence, motion } from "framer-motion";
+import { Search, Eye, MapPin, Clock, CheckCircle, XCircle, Loader, RefreshCw } from "lucide-react";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../ui/card";
 import { Input } from "../ui/input";
 import { Button } from "../ui/button";
 import { Badge } from "../ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "../ui/table";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "../ui/dialog";
+import { cn } from "../ui/utils";
 
 // 🔧 đổi path này theo project bạn
 import { adminApi, identityApi, workerApi, jobApi, categoryApi } from "../../services/api";
@@ -45,6 +47,30 @@ type UiOrder = {
   startedAt: string | null;
   completedAt?: string | null;
   estimatedCompletion: string | null;
+};
+
+const pageVariants = {
+  hidden: { opacity: 0, y: 10 },
+  show: { opacity: 1, y: 0, transition: { duration: 0.45, ease: "easeOut" as const } },
+};
+
+const gridVariants = {
+  hidden: {},
+  show: { transition: { staggerChildren: 0.08 } },
+};
+
+const cardVariants = {
+  hidden: { opacity: 0, y: 12 },
+  show: { opacity: 1, y: 0, transition: { duration: 0.35, ease: "easeOut" as const } },
+};
+
+const rowVariants = {
+  hidden: { opacity: 0, y: 6 },
+  show: (i: number) => ({
+    opacity: 1,
+    y: 0,
+    transition: { delay: i * 0.015, duration: 0.25, ease: "easeOut" as const },
+  }),
 };
 
 // ---------------- helpers ----------------
@@ -242,171 +268,171 @@ export function AdminOrders() {
 
   const [orders, setOrders] = useState<UiOrder[]>([]);
 
-  useEffect(() => {
-    const load = async () => {
-      setLoading(true);
-      setError(null);
+  const load = useCallback(async () => {
+    setLoading(true);
+    setError(null);
 
-      try {
-        // 1) load master data
-        const [usersPayload, workersPayload, categoriesPayload] = await Promise.all([
-          identityApi.getUsers(), // GET /api/identity/users :contentReference[oaicite:6]{index=6}
-          workerApi.getWorkers(), // GET /api/dispatch/workers :contentReference[oaicite:7]{index=7}
-          categoryApi.getCategories?.({ activeOnly: true }) ?? categoryApi.getCategories?.() ?? Promise.resolve([]), // GET /api/categories :contentReference[oaicite:8]{index=8}
-        ]);
+    try {
+      // 1) load master data
+      const [usersPayload, workersPayload, categoriesPayload] = await Promise.all([
+        identityApi.getUsers(), // GET /api/identity/users
+        workerApi.getWorkers(), // GET /api/dispatch/workers
+        categoryApi.getCategories?.({ activeOnly: true }) ?? categoryApi.getCategories?.() ?? Promise.resolve([]), // GET /api/categories
+      ]);
 
-        const users = asArray(usersPayload);
-        const workers = asArray(workersPayload);
-        const categories = asArray(categoriesPayload);
+      const users = asArray(usersPayload);
+      const workers = asArray(workersPayload);
+      const categories = asArray(categoriesPayload);
 
-        const userById = new Map<string, ApiUser>();
-        for (const u of users) {
-          const id = safeStr(u?.userId ?? u?.id ?? "");
-          if (id) userById.set(id, u);
-        }
-
-        const workerById = new Map<string, ApiWorker>();
-        for (const w of workers) {
-          const id = safeStr(w?.workerId ?? w?.id ?? "");
-          if (id) workerById.set(id, w);
-        }
-
-        // 2) load bookings (admin)
-        const apiStatus = mapUiStatusToApi(statusFilter);
-        const bookingsPayload = await adminApi.getAdminBookings(apiStatus ? { status: apiStatus } : undefined);
-        const bookings = asArray(bookingsPayload) as ApiBooking[];
-
-        // 3) load jobs for bookings (để có service/category/address)
-        const jobIds = Array.from(
-          new Set(
-            bookings
-              .map((b) => pickJobId(b))
-              .filter((x): x is string => Boolean(x)),
-          ),
-        );
-
-        // giới hạn để tránh quá nhiều request (tuỳ bạn tăng)
-        const MAX_JOB_FETCH = 80;
-        const jobIdLimited = jobIds.slice(0, MAX_JOB_FETCH);
-
-        const jobsList = await Promise.all(
-          jobIdLimited.map(async (jobId) => {
-            try {
-              const job = await jobApi.getJob(jobId); // GET /api/jobs/{jobId} :contentReference[oaicite:9]{index=9}
-              return { jobId, job };
-            } catch {
-              return { jobId, job: null };
-            }
-          }),
-        );
-
-        const jobById = new Map<string, ApiJob>();
-        for (const it of jobsList) {
-          if (it.job) jobById.set(it.jobId, it.job);
-        }
-
-        // 4) map -> UI orders
-        const uiOrders: UiOrder[] = bookings.map((b) => {
-          const bookingId = pickBookingId(b);
-          const customerId = pickCustomerId(b);
-          const workerId = pickWorkerId(b);
-
-          const u = customerId ? userById.get(customerId) : undefined;
-          const w = workerId ? workerById.get(workerId) : undefined;
-
-          const jobId = pickJobId(b);
-          const job = jobId ? jobById.get(jobId) : undefined;
-
-          const service = safeStr(job?.title ?? job?.Title ?? b?.title ?? b?.service ?? "Dịch vụ", "Dịch vụ");
-          const category =
-            categoryNameById(categories, job?.categoryId ?? job?.CategoryId ?? b?.categoryId ?? b?.CategoryId) ||
-            safeStr(job?.categoryName ?? b?.categoryName ?? "", "") ||
-            "N/A";
-
-          const addrParts = [
-            job?.address ?? b?.address,
-            job?.ward ?? b?.ward,
-            job?.district ?? b?.district,
-            job?.city ?? b?.city,
-          ]
-            .map((x) => safeStr(x, "").trim())
-            .filter(Boolean);
-
-          const address = addrParts.join(", ") || safeStr(job?.address ?? b?.address ?? "N/A", "N/A");
-
-          const createdAt = formatDateTimeVi(pickCreatedAt(b) ?? b?.scheduledDate ?? null) || "";
-          const startedAt = pickStartedAt(b) ? formatDateTimeVi(pickStartedAt(b)) : null;
-          const completedAt = pickCompletedAt(b) ? formatDateTimeVi(pickCompletedAt(b)) : null;
-          const estimatedCompletion = pickEstimatedCompletion(b) ? formatDateTimeVi(pickEstimatedCompletion(b)) : null;
-
-          const statusUi = mapBookingStatusToUi(b?.status ?? b?.Status);
-
-          return {
-            id: shortCodeFromId(bookingId),
-            bookingId,
-
-            customerId,
-            customerName: u ? userName(u) : safeStr(b?.customerName ?? "Không rõ"),
-            customerPhone: u ? userPhone(u) : safeStr(b?.customerPhone ?? ""),
-
-            technicianId: workerId,
-            technicianName: w ? workerName(w) : workerId ? "Đã gán thợ" : null,
-
-            service,
-            category,
-            address,
-
-            amount: pickAmount(b),
-
-            status: statusUi,
-
-            aiAnalysis: pickAiAnalysis(b),
-            images: pickImages(b),
-
-            createdAt,
-            startedAt,
-            completedAt,
-            estimatedCompletion,
-          };
-        });
-
-        setOrders(uiOrders);
-      } catch (e: any) {
-        setError(e?.response?.data?.message || e?.message || "Load orders failed");
-      } finally {
-        setLoading(false);
+      const userById = new Map<string, ApiUser>();
+      for (const u of users) {
+        const id = safeStr(u?.userId ?? u?.id ?? "");
+        if (id) userById.set(id, u);
       }
-    };
 
-    load();
+      const workerById = new Map<string, ApiWorker>();
+      for (const w of workers) {
+        const id = safeStr(w?.workerId ?? w?.id ?? "");
+        if (id) workerById.set(id, w);
+      }
+
+      // 2) load bookings (admin)
+      const apiStatus = mapUiStatusToApi(statusFilter);
+      const bookingsPayload = await adminApi.getAdminBookings(apiStatus ? { status: apiStatus } : undefined);
+      const bookings = asArray(bookingsPayload) as ApiBooking[];
+
+      // 3) load jobs for bookings (để có service/category/address)
+      const jobIds = Array.from(
+        new Set(
+          bookings
+            .map((b) => pickJobId(b))
+            .filter((x): x is string => Boolean(x)),
+        ),
+      );
+
+      // giới hạn để tránh quá nhiều request (tuỳ bạn tăng)
+      const MAX_JOB_FETCH = 80;
+      const jobIdLimited = jobIds.slice(0, MAX_JOB_FETCH);
+
+      const jobsList = await Promise.all(
+        jobIdLimited.map(async (jobId) => {
+          try {
+            const job = await jobApi.getJob(jobId); // GET /api/jobs/{jobId}
+            return { jobId, job };
+          } catch {
+            return { jobId, job: null };
+          }
+        }),
+      );
+
+      const jobById = new Map<string, ApiJob>();
+      for (const it of jobsList) {
+        if (it.job) jobById.set(it.jobId, it.job);
+      }
+
+      // 4) map -> UI orders
+      const uiOrders: UiOrder[] = bookings.map((b) => {
+        const bookingId = pickBookingId(b);
+        const customerId = pickCustomerId(b);
+        const workerId = pickWorkerId(b);
+
+        const u = customerId ? userById.get(customerId) : undefined;
+        const w = workerId ? workerById.get(workerId) : undefined;
+
+        const jobId = pickJobId(b);
+        const job = jobId ? jobById.get(jobId) : undefined;
+
+        const service = safeStr(job?.title ?? job?.Title ?? b?.title ?? b?.service ?? "Dịch vụ", "Dịch vụ");
+        const category =
+          categoryNameById(categories, job?.categoryId ?? job?.CategoryId ?? b?.categoryId ?? b?.CategoryId) ||
+          safeStr(job?.categoryName ?? b?.categoryName ?? "", "") ||
+          "N/A";
+
+        const addrParts = [
+          job?.address ?? b?.address,
+          job?.ward ?? b?.ward,
+          job?.district ?? b?.district,
+          job?.city ?? b?.city,
+        ]
+          .map((x) => safeStr(x, "").trim())
+          .filter(Boolean);
+
+        const address = addrParts.join(", ") || safeStr(job?.address ?? b?.address ?? "N/A", "N/A");
+
+        const createdAt = formatDateTimeVi(pickCreatedAt(b) ?? b?.scheduledDate ?? null) || "";
+        const startedAt = pickStartedAt(b) ? formatDateTimeVi(pickStartedAt(b)) : null;
+        const completedAt = pickCompletedAt(b) ? formatDateTimeVi(pickCompletedAt(b)) : null;
+        const estimatedCompletion = pickEstimatedCompletion(b) ? formatDateTimeVi(pickEstimatedCompletion(b)) : null;
+
+        const statusUi = mapBookingStatusToUi(b?.status ?? b?.Status);
+
+        return {
+          id: shortCodeFromId(bookingId),
+          bookingId,
+
+          customerId,
+          customerName: u ? userName(u) : safeStr(b?.customerName ?? "Không rõ"),
+          customerPhone: u ? userPhone(u) : safeStr(b?.customerPhone ?? ""),
+
+          technicianId: workerId,
+          technicianName: w ? workerName(w) : workerId ? "Đã gán thợ" : null,
+
+          service,
+          category,
+          address,
+
+          amount: pickAmount(b),
+
+          status: statusUi,
+
+          aiAnalysis: pickAiAnalysis(b),
+          images: pickImages(b),
+
+          createdAt,
+          startedAt,
+          completedAt,
+          estimatedCompletion,
+        };
+      });
+
+      setOrders(uiOrders);
+    } catch (e: any) {
+      setError(e?.response?.data?.message || e?.message || "Load orders failed");
+    } finally {
+      setLoading(false);
+    }
   }, [statusFilter]);
+
+  useEffect(() => {
+    load();
+  }, [load]);
 
   const getStatusBadge = (status: UiOrderStatus) => {
     switch (status) {
       case "finding":
         return (
-          <Badge className="bg-orange-500 flex items-center gap-1">
+          <Badge className="bg-orange-500 flex items-center gap-1 text-white">
             <Loader className="w-3 h-3 animate-spin" />
             Đang tìm thợ
           </Badge>
         );
       case "in_progress":
         return (
-          <Badge className="bg-blue-500 flex items-center gap-1">
+          <Badge className="bg-blue-500 flex items-center gap-1 text-white">
             <Clock className="w-3 h-3" />
             Đang làm
           </Badge>
         );
       case "completed":
         return (
-          <Badge className="bg-green-500 flex items-center gap-1">
+          <Badge className="bg-green-500 flex items-center gap-1 text-white">
             <CheckCircle className="w-3 h-3" />
             Hoàn thành
           </Badge>
         );
       case "cancelled":
         return (
-          <Badge className="bg-red-500 flex items-center gap-1">
+          <Badge className="bg-red-500 flex items-center gap-1 text-white">
             <XCircle className="w-3 h-3" />
             Đã hủy
           </Badge>
@@ -445,159 +471,278 @@ export function AdminOrders() {
   }, [orders]);
 
   return (
-    <div className="space-y-6 animate-slide-up">
+    <motion.div
+      variants={pageVariants}
+      initial="hidden"
+      animate="show"
+      className="space-y-6 animate-slide-up"
+    >
       {/* Header */}
-      <div>
-        <h1 className="text-3xl mb-2">Quản Lý Đơn Hàng</h1>
-        <p className="text-gray-600">Theo dõi và quản lý tất cả yêu cầu sửa chữa</p>
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+        <div>
+          <h1 className="text-3xl font-semibold tracking-tight">Quản Lý Đơn Hàng</h1>
+          <p className="text-sm text-gray-600 dark:text-gray-300">Theo dõi và quản lý tất cả yêu cầu sửa chữa</p>
+        </div>
+
+        <div className="flex items-center gap-2">
+          <Button
+            variant="outline"
+            onClick={load}
+            disabled={loading}
+            className="border-border/60 bg-background/60 backdrop-blur supports-backdrop-filter:bg-background/40"
+          >
+            <RefreshCw className={cn("mr-2 h-4 w-4", loading && "animate-spin")} />
+            Làm mới
+          </Button>
+        </div>
       </div>
 
       {/* Loading / Error */}
-      {error && <div className="text-sm text-red-600">Lỗi: {error}</div>}
+      <AnimatePresence mode="popLayout">
+        {error && (
+          <motion.div
+            initial={{ opacity: 0, y: 8 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -8 }}
+            transition={{ duration: 0.2, ease: "easeOut" }}
+            className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700 dark:border-red-900/40 dark:bg-red-950/30 dark:text-red-200"
+          >
+            Lỗi: {error}
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
-        <Card className="border-0 shadow-lg">
-          <CardContent className="p-6">
-            <p className="text-gray-600 text-sm mb-1">Tổng đơn</p>
-            <p className="text-3xl text-blue-600">{stats.total}</p>
-          </CardContent>
-        </Card>
-        <Card className="border-0 shadow-lg bg-gradient-to-br from-orange-50 to-amber-50">
-          <CardContent className="p-6">
-            <p className="text-gray-600 text-sm mb-1">Đang tìm thợ</p>
-            <p className="text-3xl text-orange-600">{stats.finding}</p>
-          </CardContent>
-        </Card>
-        <Card className="border-0 shadow-lg bg-gradient-to-br from-blue-50 to-cyan-50">
-          <CardContent className="p-6">
-            <p className="text-gray-600 text-sm mb-1">Đang làm</p>
-            <p className="text-3xl text-blue-600">{stats.in_progress}</p>
-          </CardContent>
-        </Card>
-        <Card className="border-0 shadow-lg bg-gradient-to-br from-green-50 to-emerald-50">
-          <CardContent className="p-6">
-            <p className="text-gray-600 text-sm mb-1">Hoàn thành</p>
-            <p className="text-3xl text-green-600">{stats.completed}</p>
-          </CardContent>
-        </Card>
-        <Card className="border-0 shadow-lg bg-gradient-to-br from-red-50 to-rose-50">
-          <CardContent className="p-6">
-            <p className="text-gray-600 text-sm mb-1">Đã hủy</p>
-            <p className="text-3xl text-red-600">{stats.cancelled}</p>
-          </CardContent>
-        </Card>
-      </div>
+      <motion.div
+        variants={gridVariants}
+        initial="hidden"
+        animate="show"
+        className="grid grid-cols-1 gap-4 md:grid-cols-5"
+      >
+        <motion.div
+          variants={cardVariants}
+          whileHover={{ y: -3, scale: 1.01 }}
+          whileTap={{ scale: 0.99 }}
+          transition={{ type: "spring", stiffness: 380, damping: 26 }}
+        >
+          <Card className="border-border/60 bg-background/60 shadow-lg backdrop-blur supports-backdrop-filter:bg-background/40">
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm font-medium text-gray-600 dark:text-gray-300">Tổng đơn</CardTitle>
+              <CardDescription className="text-xs">Tất cả yêu cầu</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="text-3xl font-semibold text-blue-600">{stats.total}</div>
+            </CardContent>
+          </Card>
+        </motion.div>
+
+        <motion.div
+          variants={cardVariants}
+          whileHover={{ y: -3, scale: 1.01 }}
+          whileTap={{ scale: 0.99 }}
+          transition={{ type: "spring", stiffness: 380, damping: 26 }}
+        >
+          <Card className="border-border/60 bg-linear-to-br from-orange-50 to-amber-50 shadow-lg dark:from-orange-950/30 dark:to-amber-950/20">
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm font-medium text-gray-600 dark:text-gray-200">Đang tìm thợ</CardTitle>
+              <CardDescription className="text-xs">Chưa có thợ nhận</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="text-3xl font-semibold text-orange-600">{stats.finding}</div>
+            </CardContent>
+          </Card>
+        </motion.div>
+
+        <motion.div
+          variants={cardVariants}
+          whileHover={{ y: -3, scale: 1.01 }}
+          whileTap={{ scale: 0.99 }}
+          transition={{ type: "spring", stiffness: 380, damping: 26 }}
+        >
+          <Card className="border-border/60 bg-linear-to-br from-blue-50 to-cyan-50 shadow-lg dark:from-blue-950/30 dark:to-cyan-950/20">
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm font-medium text-gray-600 dark:text-gray-200">Đang làm</CardTitle>
+              <CardDescription className="text-xs">Đang xử lý</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="text-3xl font-semibold text-blue-600">{stats.in_progress}</div>
+            </CardContent>
+          </Card>
+        </motion.div>
+
+        <motion.div
+          variants={cardVariants}
+          whileHover={{ y: -3, scale: 1.01 }}
+          whileTap={{ scale: 0.99 }}
+          transition={{ type: "spring", stiffness: 380, damping: 26 }}
+        >
+          <Card className="border-border/60 bg-linear-to-br from-green-50 to-emerald-50 shadow-lg dark:from-green-950/30 dark:to-emerald-950/20">
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm font-medium text-gray-600 dark:text-gray-200">Hoàn thành</CardTitle>
+              <CardDescription className="text-xs">Đã xong</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="text-3xl font-semibold text-green-600">{stats.completed}</div>
+            </CardContent>
+          </Card>
+        </motion.div>
+
+        <motion.div
+          variants={cardVariants}
+          whileHover={{ y: -3, scale: 1.01 }}
+          whileTap={{ scale: 0.99 }}
+          transition={{ type: "spring", stiffness: 380, damping: 26 }}
+        >
+          <Card className="border-border/60 bg-linear-to-br from-red-50 to-rose-50 shadow-lg dark:from-red-950/30 dark:to-rose-950/20">
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm font-medium text-gray-600 dark:text-gray-200">Đã hủy</CardTitle>
+              <CardDescription className="text-xs">Bị hủy/không thành công</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="text-3xl font-semibold text-red-600">{stats.cancelled}</div>
+            </CardContent>
+          </Card>
+        </motion.div>
+      </motion.div>
 
       {/* Filters */}
-      <Card className="border-0 shadow-lg">
-        <CardContent className="p-6">
-          <div className="flex flex-col md:flex-row gap-4">
-            <div className="flex-1 relative">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
-              <Input
-                type="text"
-                placeholder="Tìm kiếm theo mã đơn, khách hàng, dịch vụ..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-10"
-              />
+      <motion.div variants={cardVariants} initial="hidden" animate="show">
+        <Card className="border-border/60 bg-background/60 shadow-lg backdrop-blur supports-backdrop-filter:bg-background/40">
+          <CardContent className="p-4 md:p-6">
+            <div className="flex flex-col gap-4 md:flex-row md:items-center">
+              <div className="flex-1 relative">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400" />
+                <Input
+                  type="text"
+                  placeholder="Tìm theo mã đơn, khách hàng, dịch vụ..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="pl-10 bg-background/70 dark:bg-background/30"
+                />
+              </div>
+
+              <div className="flex items-center gap-3">
+                <Select value={statusFilter} onValueChange={setStatusFilter}>
+                  <SelectTrigger className="w-full md:w-56 bg-background/70 dark:bg-background/30">
+                    <SelectValue placeholder="Trạng thái" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">Tất cả</SelectItem>
+                    <SelectItem value="finding">Đang tìm thợ</SelectItem>
+                    <SelectItem value="in_progress">Đang làm</SelectItem>
+                    <SelectItem value="completed">Hoàn thành</SelectItem>
+                    <SelectItem value="cancelled">Đã hủy</SelectItem>
+                  </SelectContent>
+                </Select>
+
+                <div className="hidden md:block text-sm text-gray-600 dark:text-gray-300">
+                  {loading ? "Đang tải..." : `${filteredOrders.length} / ${orders.length} đơn`}
+                </div>
+              </div>
             </div>
-            <Select value={statusFilter} onValueChange={setStatusFilter}>
-              <SelectTrigger className="w-full md:w-48">
-                <SelectValue placeholder="Trạng thái" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">Tất cả</SelectItem>
-                <SelectItem value="finding">Đang tìm thợ</SelectItem>
-                <SelectItem value="in_progress">Đang làm</SelectItem>
-                <SelectItem value="completed">Hoàn thành</SelectItem>
-                <SelectItem value="cancelled">Đã hủy</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-        </CardContent>
-      </Card>
+          </CardContent>
+        </Card>
+      </motion.div>
 
       {/* Table */}
-      <Card className="border-0 shadow-lg">
-        <CardContent className="p-0">
-          <Table>
-            <TableHeader>
-              <TableRow className="bg-gray-50">
-                <TableHead>Mã đơn</TableHead>
-                <TableHead>Khách hàng</TableHead>
-                <TableHead>Dịch vụ</TableHead>
-                <TableHead>Thợ</TableHead>
-                <TableHead>Địa chỉ</TableHead>
-                <TableHead>Giá trị</TableHead>
-                <TableHead className="text-center">Trạng thái</TableHead>
-                <TableHead>Thời gian</TableHead>
-                <TableHead className="text-center">Thao tác</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {loading ? (
-                <TableRow>
-                  <TableCell colSpan={9} className="h-24 text-center">
-                    <div className="flex items-center justify-center gap-2">
-                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600" />
-                      Đang tải dữ liệu...
-                    </div>
-                  </TableCell>
+      <motion.div variants={cardVariants} initial="hidden" animate="show">
+        <Card className="border-border/60 bg-background/60 shadow-lg backdrop-blur supports-backdrop-filter:bg-background/40">
+          <CardContent className="p-0">
+            <Table>
+              <TableHeader>
+                <TableRow className="bg-gray-50/70 dark:bg-gray-900/30">
+                  <TableHead className="pl-4">Mã đơn</TableHead>
+                  <TableHead>Khách hàng</TableHead>
+                  <TableHead>Dịch vụ</TableHead>
+                  <TableHead>Thợ</TableHead>
+                  <TableHead>Địa chỉ</TableHead>
+                  <TableHead>Giá trị</TableHead>
+                  <TableHead className="text-center">Trạng thái</TableHead>
+                  <TableHead>Thời gian</TableHead>
+                  <TableHead className="pr-4 text-center">Thao tác</TableHead>
                 </TableRow>
-              ) : filteredOrders.length === 0 ? (
-                <TableRow>
-                  <TableCell colSpan={9} className="h-24 text-center text-gray-500">
-                    Không có đơn hàng nào
-                  </TableCell>
-                </TableRow>
-              ) : (
-                filteredOrders.map((order) => (
-                  <TableRow key={order.bookingId} className="hover:bg-blue-50 transition-colors">
-                    <TableCell className="font-medium text-[#007BFF]">{order.id}</TableCell>
-                    <TableCell>
-                      <div>
-                        <p className="font-medium">{order.customerName}</p>
-                        <p className="text-sm text-gray-500">{order.customerPhone}</p>
+              </TableHeader>
+              <TableBody>
+                {loading ? (
+                  <TableRow>
+                    <TableCell colSpan={9} className="h-24 text-center">
+                      <div className="flex items-center justify-center gap-2 text-gray-600 dark:text-gray-300">
+                        <div className="h-4 w-4 animate-spin rounded-full border-b-2 border-blue-600" />
+                        Đang tải dữ liệu...
                       </div>
-                    </TableCell>
-                    <TableCell>
-                      <div>
-                        <p className="font-medium">{order.service}</p>
-                        <Badge variant="outline" className="text-xs mt-1">
-                          {order.category}
-                        </Badge>
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      {order.technicianName ? (
-                        <p className="font-medium">{order.technicianName}</p>
-                      ) : (
-                        <p className="text-gray-400 text-sm">Chưa có</p>
-                      )}
-                    </TableCell>
-                    <TableCell className="text-sm max-w-[150px]">
-                      <div className="flex items-start gap-1">
-                        <MapPin className="w-3 h-3 text-gray-400 mt-0.5 flex-shrink-0" />
-                        <span className="line-clamp-2">{order.address}</span>
-                      </div>
-                    </TableCell>
-                    <TableCell className="font-medium text-green-600">{formatMoneyVnd(order.amount)}</TableCell>
-                    <TableCell className="text-center">{getStatusBadge(order.status)}</TableCell>
-                    <TableCell className="text-sm text-gray-600">{order.createdAt}</TableCell>
-                    <TableCell className="text-center">
-                      <Button variant="ghost" size="sm" onClick={() => setSelectedOrder(order)}>
-                        <Eye className="w-4 h-4" />
-                      </Button>
                     </TableCell>
                   </TableRow>
-                ))
-              )}
-            </TableBody>
-          </Table>
-        </CardContent>
-      </Card>
+                ) : filteredOrders.length === 0 ? (
+                  <TableRow>
+                    <TableCell colSpan={9} className="h-24 text-center text-gray-500 dark:text-gray-400">
+                      Không có đơn hàng nào
+                    </TableCell>
+                  </TableRow>
+                ) : (
+                  filteredOrders.map((order, idx) => (
+                    <motion.tr
+                      key={order.bookingId}
+                      variants={rowVariants}
+                      initial="hidden"
+                      animate="show"
+                      custom={idx}
+                      whileHover={{ backgroundColor: "rgba(0, 123, 255, 0.06)" }}
+                      className="border-b transition-colors"
+                    >
+                      <TableCell className="pl-4 font-medium text-[#007BFF]">{order.id}</TableCell>
+                      <TableCell>
+                        <div className="min-w-[180px]">
+                          <p className="font-medium">{order.customerName}</p>
+                          <p className="text-sm text-gray-500 dark:text-gray-400">{order.customerPhone}</p>
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <div className="min-w-[170px]">
+                          <p className="font-medium">{order.service}</p>
+                          <Badge
+                            variant="outline"
+                            className="mt-1 text-xs bg-background/60 dark:bg-background/20"
+                          >
+                            {order.category}
+                          </Badge>
+                        </div>
+                      </TableCell>
+                      <TableCell className="min-w-[140px]">
+                        {order.technicianName ? (
+                          <p className="font-medium">{order.technicianName}</p>
+                        ) : (
+                          <p className="text-sm text-gray-400">Chưa có</p>
+                        )}
+                      </TableCell>
+                      <TableCell className="text-sm max-w-[220px] whitespace-normal">
+                        <div className="flex items-start gap-1">
+                          <MapPin className="mt-0.5 h-3 w-3 text-gray-400 shrink-0" />
+                          <span className="line-clamp-2 text-gray-700 dark:text-gray-200">{order.address}</span>
+                        </div>
+                      </TableCell>
+                      <TableCell className="font-medium text-green-600">{formatMoneyVnd(order.amount)}</TableCell>
+                      <TableCell className="text-center">{getStatusBadge(order.status)}</TableCell>
+                      <TableCell className="text-sm text-gray-600 dark:text-gray-300">{order.createdAt}</TableCell>
+                      <TableCell className="pr-4 text-center">
+                        <motion.div whileTap={{ scale: 0.96 }}>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => setSelectedOrder(order)}
+                            className="hover:bg-blue-50 dark:hover:bg-blue-950/30"
+                          >
+                            <Eye className="h-4 w-4 text-[#007BFF]" />
+                          </Button>
+                        </motion.div>
+                      </TableCell>
+                    </motion.tr>
+                  ))
+                )}
+              </TableBody>
+            </Table>
+          </CardContent>
+        </Card>
+      </motion.div>
 
       {/* Detail Dialog */}
       <Dialog open={!!selectedOrder} onOpenChange={() => setSelectedOrder(null)}>
@@ -610,43 +755,43 @@ export function AdminOrders() {
           {selectedOrder && (
             <div className="space-y-6">
               {/* Status */}
-              <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
+              <div className="flex items-center justify-between p-4 bg-gray-50/70 dark:bg-gray-900/30 rounded-xl">
                 <div>
-                  <p className="text-sm text-gray-600 mb-1">Trạng thái hiện tại</p>
+                  <p className="text-sm text-gray-600 dark:text-gray-300 mb-1">Trạng thái hiện tại</p>
                   {getStatusBadge(selectedOrder.status)}
                 </div>
                 <div className="text-right">
-                  <p className="text-sm text-gray-600 mb-1">Giá trị đơn</p>
+                  <p className="text-sm text-gray-600 dark:text-gray-300 mb-1">Giá trị đơn</p>
                   <p className="text-2xl text-green-600">{formatMoneyVnd(selectedOrder.amount)}</p>
                 </div>
               </div>
 
               {/* Customer & Technician */}
-              <div className="grid grid-cols-2 gap-4">
-                <div className="p-4 border rounded-lg">
+              <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                <div className="p-4 border border-border/60 rounded-xl bg-background/60 backdrop-blur supports-backdrop-filter:bg-background/40">
                   <h4 className="font-medium mb-3">Thông tin khách hàng</h4>
-                  <div className="space-y-2 text-sm">
+                  <div className="space-y-2 text-sm text-gray-800 dark:text-gray-200">
                     <p>
-                      <span className="text-gray-600">Tên:</span> {selectedOrder.customerName}
+                      <span className="text-gray-600 dark:text-gray-300">Tên:</span> {selectedOrder.customerName}
                     </p>
                     <p>
-                      <span className="text-gray-600">SĐT:</span> {selectedOrder.customerPhone}
+                      <span className="text-gray-600 dark:text-gray-300">SĐT:</span> {selectedOrder.customerPhone}
                     </p>
                     <p className="flex items-start gap-1">
-                      <span className="text-gray-600">Địa chỉ:</span>
+                      <span className="text-gray-600 dark:text-gray-300">Địa chỉ:</span>
                       <span className="flex-1">{selectedOrder.address}</span>
                     </p>
                   </div>
                 </div>
 
-                <div className="p-4 border rounded-lg">
+                <div className="p-4 border border-border/60 rounded-xl bg-background/60 backdrop-blur supports-backdrop-filter:bg-background/40">
                   <h4 className="font-medium mb-3">Thông tin thợ</h4>
                   {selectedOrder.technicianName ? (
                     <div className="space-y-2 text-sm">
                       <p>
-                        <span className="text-gray-600">Tên:</span> {selectedOrder.technicianName}
+                        <span className="text-gray-600 dark:text-gray-300">Tên:</span> {selectedOrder.technicianName}
                       </p>
-                      <Badge className="bg-green-500">Đã nhận việc</Badge>
+                      <Badge className="bg-green-500 text-white">Đã nhận việc</Badge>
                     </div>
                   ) : (
                     <p className="text-gray-400 text-sm">Chưa có thợ nhận việc</p>
@@ -655,15 +800,15 @@ export function AdminOrders() {
               </div>
 
               {/* Service Info */}
-              <div className="p-4 border rounded-lg">
+              <div className="p-4 border border-border/60 rounded-xl bg-background/60 backdrop-blur supports-backdrop-filter:bg-background/40">
                 <h4 className="font-medium mb-3">Thông tin dịch vụ</h4>
-                <div className="grid grid-cols-2 gap-4 text-sm">
+                <div className="grid grid-cols-1 gap-4 text-sm md:grid-cols-2">
                   <div>
-                    <p className="text-gray-600">Loại dịch vụ</p>
+                    <p className="text-gray-600 dark:text-gray-300">Loại dịch vụ</p>
                     <p className="font-medium">{selectedOrder.service}</p>
                   </div>
                   <div>
-                    <p className="text-gray-600">Danh mục</p>
+                    <p className="text-gray-600 dark:text-gray-300">Danh mục</p>
                     <Badge>{selectedOrder.category}</Badge>
                   </div>
                 </div>
@@ -671,26 +816,26 @@ export function AdminOrders() {
 
               {/* AI Analysis */}
               {selectedOrder.aiAnalysis && (
-                <div className="p-4 bg-purple-50 border border-purple-200 rounded-lg">
+                <div className="p-4 bg-purple-50 border border-purple-200 rounded-xl dark:bg-purple-950/30 dark:border-purple-900/40">
                   <div className="flex items-center gap-2 mb-2">
-                    <div className="w-8 h-8 bg-gradient-to-br from-purple-500 to-pink-500 rounded-lg flex items-center justify-center">
+                    <div className="w-8 h-8 bg-linear-to-br from-purple-500 to-pink-500 rounded-lg flex items-center justify-center">
                       <span className="text-white text-xs">AI</span>
                     </div>
                     <h4 className="font-medium">Phân tích của AI</h4>
                   </div>
-                  <p className="text-sm text-gray-700">{selectedOrder.aiAnalysis}</p>
+                  <p className="text-sm text-gray-700 dark:text-gray-200">{selectedOrder.aiAnalysis}</p>
                 </div>
               )}
 
               {/* Timeline */}
-              <div className="p-4 border rounded-lg">
+              <div className="p-4 border border-border/60 rounded-xl bg-background/60 backdrop-blur supports-backdrop-filter:bg-background/40">
                 <h4 className="font-medium mb-3">Tiến trình</h4>
                 <div className="space-y-3">
                   <div className="flex items-start gap-3">
                     <div className="w-2 h-2 bg-blue-500 rounded-full mt-2"></div>
                     <div>
                       <p className="text-sm font-medium">Tạo đơn</p>
-                      <p className="text-xs text-gray-500">{selectedOrder.createdAt}</p>
+                      <p className="text-xs text-gray-500 dark:text-gray-400">{selectedOrder.createdAt}</p>
                     </div>
                   </div>
 
@@ -699,7 +844,7 @@ export function AdminOrders() {
                       <div className="w-2 h-2 bg-green-500 rounded-full mt-2"></div>
                       <div>
                         <p className="text-sm font-medium">Bắt đầu làm việc</p>
-                        <p className="text-xs text-gray-500">{selectedOrder.startedAt}</p>
+                        <p className="text-xs text-gray-500 dark:text-gray-400">{selectedOrder.startedAt}</p>
                       </div>
                     </div>
                   )}
@@ -709,7 +854,7 @@ export function AdminOrders() {
                       <div className="w-2 h-2 bg-purple-500 rounded-full mt-2"></div>
                       <div>
                         <p className="text-sm font-medium">Hoàn thành</p>
-                        <p className="text-xs text-gray-500">{selectedOrder.completedAt}</p>
+                        <p className="text-xs text-gray-500 dark:text-gray-400">{selectedOrder.completedAt}</p>
                       </div>
                     </div>
                   )}
@@ -719,7 +864,7 @@ export function AdminOrders() {
                       <div className="w-2 h-2 bg-orange-500 rounded-full mt-2"></div>
                       <div>
                         <p className="text-sm font-medium">Dự kiến hoàn thành</p>
-                        <p className="text-xs text-gray-500">{selectedOrder.estimatedCompletion}</p>
+                        <p className="text-xs text-gray-500 dark:text-gray-400">{selectedOrder.estimatedCompletion}</p>
                       </div>
                     </div>
                   )}
@@ -735,6 +880,6 @@ export function AdminOrders() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
-    </div>
+    </motion.div>
   );
 }
