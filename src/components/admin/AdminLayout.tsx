@@ -82,7 +82,7 @@ export function AdminLayout() {
 
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-blue-50">
+    <div className="min-h-screen bg-linear-to-br from-gray-50 to-blue-50">
       {/* Sidebar */}
       <aside
         className={`fixed left-0 top-0 h-full bg-white shadow-xl z-40 transition-all duration-300 ${sidebarOpen ? "w-64" : "w-20"
@@ -95,11 +95,11 @@ export function AdminLayout() {
               to="/admin"
               className="flex items-center gap-2"
             >
-              <div className="w-10 h-10 bg-gradient-to-br from-[#007BFF] to-purple-600 rounded-xl flex items-center justify-center shadow-lg">
+              <div className="w-10 h-10 bg-linear-to-br from-[#007BFF] to-purple-600 rounded-xl flex items-center justify-center shadow-lg">
                 <Wrench className="w-6 h-6 text-white" />
               </div>
               <div>
-                <span className="bg-gradient-to-r from-[#007BFF] to-purple-600 bg-clip-text text-transparent">
+                <span className="bg-linear-to-r from-[#007BFF] to-purple-600 bg-clip-text text-transparent">
                   FishFix
                 </span>
                 <div className="text-xs text-gray-500">
@@ -108,13 +108,13 @@ export function AdminLayout() {
               </div>
             </Link>
           ) : (
-            <div className="w-10 h-10 bg-gradient-to-br from-[#007BFF] to-purple-600 rounded-xl flex items-center justify-center shadow-lg mx-auto">
+            <div className="w-10 h-10 bg-linear-to-br from-[#007BFF] to-purple-600 rounded-xl flex items-center justify-center shadow-lg mx-auto">
               <Wrench className="w-6 h-6 text-white" />
             </div>
           )}
         </div>
 
-        {/* Menu Items */}
+        {/* Menu Items — thanh xanh chỉ hiện khi hover, không hover như ảnh 2 */}
         <nav className="p-4 space-y-2">
           {menuItems.map((item) => {
             const Icon = item.icon;
@@ -124,19 +124,31 @@ export function AdminLayout() {
               <Link
                 key={item.path}
                 to={item.path}
-                className={`flex items-center gap-3 px-3 py-3 rounded-xl transition-all duration-300 group ${active
-                  ? "bg-gradient-to-r from-[#007BFF] to-blue-600 text-white shadow-lg"
-                  : "text-gray-700 hover:bg-blue-50"
-                  }`}
+                className={`relative flex items-center gap-3 px-3 py-3 rounded-xl transition-all duration-300 group overflow-hidden
+                  ${active ? "font-medium text-gray-900" : "text-gray-700"}
+                  hover:text-white
+                `}
               >
+                {/* Nền xanh chỉ hiện khi hover — animation mượt */}
+                <span
+                  className="absolute inset-0 bg-linear-to-r from-[#007BFF] to-blue-600 opacity-0 group-hover:opacity-100 transition-opacity duration-300 rounded-xl"
+                  aria-hidden
+                />
+                {/* Chỉ active (không hover): vạch trái mỏng */}
+                {active && (
+                  <span
+                    className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-6 bg-[#007BFF] rounded-r opacity-80 group-hover:opacity-0 transition-opacity duration-300"
+                    aria-hidden
+                  />
+                )}
                 <Icon
-                  className={`w-5 h-5 ${active ? "text-white" : "text-gray-600 group-hover:text-[#007BFF]"}`}
+                  className="relative z-10 w-5 h-5 shrink-0 text-gray-600 transition-colors duration-300 group-hover:text-white"
                 />
                 {sidebarOpen && (
-                  <span className="flex-1">{item.label}</span>
+                  <span className="relative z-10 flex-1">{item.label}</span>
                 )}
-                {sidebarOpen && active && (
-                  <ChevronRight className="w-4 h-4" />
+                {sidebarOpen && (
+                  <ChevronRight className="relative z-10 w-4 h-4 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity duration-300 text-white" />
                 )}
               </Link>
             );
@@ -224,7 +236,7 @@ export function AdminLayout() {
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <button className="flex items-center gap-3 p-2 hover:bg-blue-50 rounded-lg transition-colors">
-                    <div className="w-9 h-9 bg-gradient-to-br from-purple-500 to-pink-500 rounded-full flex items-center justify-center text-white">
+                    <div className="w-9 h-9 bg-linear-to-br from-purple-500 to-pink-500 rounded-full flex items-center justify-center text-white">
                       AD
                     </div>
                     <div className="text-left hidden md:block">

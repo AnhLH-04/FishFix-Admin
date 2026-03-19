@@ -105,6 +105,8 @@ type BookingLike = {
   createdAt?: string;
   updatedAt?: string;
   completedAt?: string;
+  actualStartTime?: string | null;
+  actualEndTime?: string | null;
 };
 
 function asArray<T = any>(payload: unknown): T[] {
@@ -153,6 +155,29 @@ function pickBookingTime(b: BookingLike): number {
   return NaN;
 }
 
+/** Thời điểm thanh toán/hoàn thành (ưu tiên updatedAt, completedAt, actualEndTime, ...) */
+function pickPaymentTime(b: BookingLike): number {
+  const candidates = [
+    b.updatedAt,
+    b.completedAt,
+    b.actualEndTime,
+    b.actualStartTime,
+    b.scheduledAt,
+    b.scheduledDate,
+    b.createdAt,
+  ];
+  for (const c of candidates) {
+    const t = safeTime(c);
+    if (Number.isFinite(t)) return t;
+  }
+  return NaN;
+}
+
+function isPaidBooking(b: BookingLike): boolean {
+  const s = String(b.status ?? "").trim().toLowerCase();
+  return s === "paid";
+}
+
 function isCompletedBooking(b: BookingLike) {
   if (b.completedAt) return true;
 
@@ -160,6 +185,8 @@ function isCompletedBooking(b: BookingLike) {
   if (typeof st === "string") {
     const s = st.toLowerCase();
     return (
+      // Treat paid bookings as completed for revenue/order KPIs
+      s.includes("paid") ||
       s.includes("complete") ||
       s.includes("completed") ||
       s.includes("done") ||
@@ -208,31 +235,36 @@ export function useAdminTopCards() {
     try {
       const today = startOfDay(new Date());
       const from7 = addDays(today, -6);
-
-      const scheduledFrom = toYmd(from7);
-      const scheduledTo = toYmd(today);
+      const from7Ms = from7.getTime();
+      const toMsExclusive = addDays(today, 1).getTime();
+      const sevenDaysAgo = Date.now() - 7 * 24 * 60 * 60 * 1000;
 
       const [bookingsRes, workersRes, usersRes] = await Promise.all([
-        adminApi.getAdminBookings({ scheduledFrom, scheduledTo }).catch(() => adminApi.getAdminBookings()),
+        adminApi.getAdminBookings().catch(() => []),
         workerApi.getWorkers(),
         identityApi.getUsers(),
       ]);
 
-      const bookings = asArray<BookingLike>(bookingsRes);
+      const allBookings = asArray<BookingLike>(bookingsRes);
       const workers = asArray<any>(workersRes);
       const users = asArray<any>(usersRes);
 
+      const bookings = allBookings.filter((b) => {
+        const t = b.scheduledDate ? safeTime(b.scheduledDate) : pickBookingTime(b);
+        return Number.isFinite(t) && t >= from7Ms && t < toMsExclusive;
+      });
+
       const completed7d = bookings.filter((b) => {
         const t = pickBookingTime(b);
-        return Number.isFinite(t) && t >= from7.getTime() && isCompletedBooking(b);
+        return Number.isFinite(t) && t >= from7Ms && isCompletedBooking(b);
       });
 
       const revenue7d = completed7d.reduce((sum, b) => sum + getBookingAmount(b), 0);
 
-      const ordersToday = completed7d.filter((b) => {
-        const t = pickBookingTime(b);
-        return Number.isFinite(t) && isSameDay(t, today);
-      }).length;
+      // Đơn hàng gần đây: cùng logic với list "Đơn Hàng Gần Đây" — pickBookingTime trong 7 ngày gần đây
+      const ordersToday = allBookings.filter(
+        (b) => Number.isFinite(pickBookingTime(b)) && pickBookingTime(b) >= sevenDaysAgo,
+      ).length;
 
       const activeWorkers = workers.length;
 
