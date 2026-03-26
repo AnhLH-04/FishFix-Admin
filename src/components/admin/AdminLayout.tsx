@@ -8,6 +8,7 @@ import {
   CreditCard,
   Brain,
   MessageSquare,
+  Star,
   Settings,
   Menu,
   X,
@@ -41,6 +42,11 @@ const menuItems = [
     icon: Wrench,
     label: "Thợ sửa chữa",
     path: "/admin/technicians",
+  },
+  {
+    icon: Star,
+    label: "Đánh giá",
+    path: "/admin/reviews",
   },
   {
     icon: ShoppingCart,

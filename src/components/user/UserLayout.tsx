@@ -14,7 +14,8 @@ import {
   Instagram,
   User,
   LogOut,
-  Briefcase
+  Briefcase,
+  Search,
 } from 'lucide-react';
 import { Sheet, SheetContent, SheetTrigger } from '../ui/sheet';
 import {
@@ -78,6 +79,7 @@ export function UserLayout() {
 
   const navItems = [
     { path: '/', label: 'Trang Chủ', icon: Home },
+    { path: '/technicians', label: 'Tìm Thợ', icon: Search },
     { path: '/about', label: 'Về Chúng Tôi', icon: Users },
     { path: '/download', label: 'Tải App', icon: Phone },
     { path: '/customer', label: 'Khách Hàng', icon: Users },
@@ -85,7 +87,6 @@ export function UserLayout() {
     // { path: '/pricing', label: 'Bảng Giá', icon: Calendar },
     // { path: '/services', label: 'Dịch Vụ', icon: Wrench },
     // { path: '/ai', label: 'Hỏi AI', icon: Bot },
-    // { path: '/technicians', label: 'Tìm Thợ', icon: Users },
     // { path: '/orders', label: 'Đơn Hàng', icon: ShoppingBag },
     // { path: '/profile', label: 'Hồ Sơ', icon: User }
   ];
@@ -260,9 +261,9 @@ export function UserLayout() {
             <div>
               <h3 className="text-lg font-bold mb-6 text-white">Liên Kết Nhanh</h3>
               <ul className="space-y-3 text-sm">
-                <li><Link to="/" className="text-gray-400 hover:text-white transition-colors duration-200 flex items-center gap-2 group"><span className="w-0 group-hover:w-2 h-0.5 bg-blue-500 transition-all duration-200"></span>Dịch Vụ</Link></li>
-                <li><Link to="/" className="text-gray-400 hover:text-white transition-colors duration-200 flex items-center gap-2 group"><span className="w-0 group-hover:w-2 h-0.5 bg-blue-500 transition-all duration-200"></span>Tìm Thợ</Link></li>
-                <li><Link to="/" className="text-gray-400 hover:text-white transition-colors duration-200 flex items-center gap-2 group"><span className="w-0 group-hover:w-2 h-0.5 bg-blue-500 transition-all duration-200"></span>Về Chúng Tôi</Link></li>
+                <li><Link to="/services" className="text-gray-400 hover:text-white transition-colors duration-200 flex items-center gap-2 group"><span className="w-0 group-hover:w-2 h-0.5 bg-blue-500 transition-all duration-200"></span>Dịch Vụ</Link></li>
+                <li><Link to="/technicians" className="text-gray-400 hover:text-white transition-colors duration-200 flex items-center gap-2 group"><span className="w-0 group-hover:w-2 h-0.5 bg-blue-500 transition-all duration-200"></span>Tìm Thợ</Link></li>
+                <li><Link to="/about" className="text-gray-400 hover:text-white transition-colors duration-200 flex items-center gap-2 group"><span className="w-0 group-hover:w-2 h-0.5 bg-blue-500 transition-all duration-200"></span>Về Chúng Tôi</Link></li>
                 <li><Link to="/" className="text-gray-400 hover:text-white transition-colors duration-200 flex items-center gap-2 group"><span className="w-0 group-hover:w-2 h-0.5 bg-blue-500 transition-all duration-200"></span>Blog</Link></li>
                 <li><Link to="/" className="text-gray-400 hover:text-white transition-colors duration-200 flex items-center gap-2 group"><span className="w-0 group-hover:w-2 h-0.5 bg-blue-500 transition-all duration-200"></span>Tuyển Dụng</Link></li>
               </ul>
