@@ -10,6 +10,7 @@ import { AdminAI } from "./components/admin/AdminAI";
 import { AdminSupport } from "./components/admin/AdminSupport";
 import { AdminSettings } from "./components/admin/AdminSettings";
 import { AdminTechnicianDetail } from "./components/admin/AdminTechnicianDetail";
+import { AdminReview } from "./components/admin/AdminReview";
 import { NotFound } from "./components/admin/NotFound";
 import { UserLayout } from "./components/user/UserLayout";
 import { UserHome } from "./components/user/UserHome";
@@ -122,6 +123,7 @@ export default function App() {
             <Route path="customers" element={<AdminCustomers />} />
             <Route path="technicians" element={<AdminTechnicians />} />
             <Route path="technicians/:workerId" element={<AdminTechnicianDetail />} />
+            <Route path="reviews" element={<AdminReview />} />
             <Route path="orders" element={<AdminOrders />} />
             <Route path="payments" element={<AdminPayments />} />
             <Route path="ai" element={<AdminAI />} />

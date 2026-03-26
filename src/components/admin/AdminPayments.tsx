@@ -56,7 +56,7 @@ type RevenuePoint = {
   orders: number;
 };
 
-const PLATFORM_FEE_RATE = 0.05;
+const PLATFORM_FEE_RATE = 0.15;
 
 function pad2(n: number) {
   return String(n).padStart(2, "0");
@@ -553,7 +553,9 @@ export function AdminPayments() {
                 >
                   <TrendingUp className="w-7 h-7 text-white" />
                 </motion.div>
-                <Badge className="bg-blue-500">{loading ? "..." : "5%"}</Badge>
+                <Badge className="bg-blue-500">
+                  {loading ? "..." : `${Math.round(PLATFORM_FEE_RATE * 100)}%`}
+                </Badge>
               </div>
               <p className="text-gray-600 text-sm mb-1">Hoa hồng nền tảng</p>
               <p className="text-3xl text-blue-600">
@@ -680,7 +682,7 @@ export function AdminPayments() {
                         dataKey="commission"
                         stroke="#007BFF"
                         strokeWidth={3}
-                        name="Hoa hồng (5%)"
+                        name={`Hoa hồng (${Math.round(PLATFORM_FEE_RATE * 100)}%)`}
                       />
                     </LineChart>
                   </ResponsiveContainer>

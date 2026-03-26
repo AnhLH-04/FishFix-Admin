@@ -84,10 +84,43 @@ export interface UpdateProfileRequest {
   phone: string;
 }
 
+/** POST /api/bookings — theo api_design.md */
 export interface CreateBookingRequest {
-  customerName: string;
-  description: string;
+  jobId: string;
+  bidId: string;
+  customerId: string;
+  workerId: string;
+  finalAmount: number;
+  scheduledDate: string; // YYYY-MM-DD
+  scheduledTimeStart?: string | null;
+  scheduledTimeEnd?: string | null;
+  depositAmount?: number | null;
 }
+
+export type BookingApiRecord = {
+  bookingId: string;
+  jobId: string;
+  bidId: string;
+  customerId: string;
+  workerId: string;
+  finalAmount?: number;
+  depositAmount?: number | null;
+  scheduledDate?: string;
+  scheduledTimeStart?: string;
+  scheduledTimeEnd?: string;
+  status?: string;
+  createdAt?: string;
+  [key: string]: unknown;
+};
+
+/** POST /api/jobs/{jobId}/bids */
+export type CreateBidDto = {
+  workerId: string;
+  amount: number;
+  message?: string | null;
+  estimatedHours?: number | null;
+  estimatedCompletion?: string | null;
+};
 
 export interface CreateWorkerProfileRequest {
   userId: string;
@@ -129,6 +162,10 @@ export interface WorkerProfile {
   availabilityStatus: string;
   workingRadiusKm: number;
   skills: WorkerSkill[];
+  /** Có trên nhiều response GET /api/dispatch/workers/{id} */
+  fullName?: string | null;
+  ratingAvg?: number | null;
+  ratingCount?: number | null;
 }
 
 export interface ApiError {
@@ -225,14 +262,43 @@ export const authApi = {
   },
 };
 
-// ===== Booking =====
+// ===== Booking & bids (dùng `api` từ workerService để cùng base URL + token với jobApi) =====
+export const bidApi = {
+  createBid: async (jobId: string, dto: CreateBidDto): Promise<{ bidId: string } | string> => {
+    const { data } = await api.post<{ bidId: string } | string>(`/api/jobs/${jobId}/bids`, dto);
+    return data;
+  },
+
+  acceptBid: async (bidId: string): Promise<void> => {
+    await api.put(`/api/bids/${bidId}/accept`);
+  },
+};
+
+function unwrapId(payload: unknown, key: string): string {
+  if (typeof payload === "string" && payload.length > 0) return payload;
+  if (payload && typeof payload === "object" && key in payload) {
+    const v = (payload as Record<string, unknown>)[key];
+    if (typeof v === "string" && v.length > 0) return v;
+  }
+  throw new Error(`Invalid API response: missing ${key}`);
+}
+
 export const bookingApi = {
   /**
-   * Create a booking (mock)
+   * GET /api/bookings?customerId=&workerId=&status=
+   */
+  getBookings: async (params?: { customerId?: string; workerId?: string; status?: string }): Promise<BookingApiRecord[]> => {
+    const { data } = await api.get<BookingApiRecord[] | unknown>("/api/bookings", { params });
+    if (Array.isArray(data)) return data;
+    return [];
+  },
+
+  /**
+   * POST /api/bookings — trả về bookingId (string hoặc object tùy backend)
    */
   createBooking: async (data: CreateBookingRequest): Promise<string> => {
-    const response = await apiClient.post<string>("/api/bookings", data);
-    return response.data;
+    const { data: raw } = await api.post<unknown>("/api/bookings", data);
+    return unwrapId(raw, "bookingId");
   },
 };
 
