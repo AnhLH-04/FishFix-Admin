@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
-import { Search, Eye, MapPin, Clock, CheckCircle, XCircle, Loader, RefreshCw } from "lucide-react";
+import { Search, Eye, MapPin, Clock, Loader, RefreshCw } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../ui/card";
 import { Input } from "../ui/input";
 import { Button } from "../ui/button";
@@ -24,6 +24,8 @@ type UiOrderStatus = "finding" | "in_progress" | "completed" | "cancelled";
 type UiOrder = {
   id: string; // hiển thị kiểu #xxxx
   bookingId: string;
+  /** Chuỗi status thô từ API — dùng để badge khớp AdminPayments */
+  apiStatus: string;
 
   customerId?: string | null;
   customerName: string;
@@ -110,6 +112,17 @@ function shortCodeFromId(id: string) {
 function mapBookingStatusToUi(statusRaw: any): UiOrderStatus {
   const s = safeStr(statusRaw, "").toLowerCase().replace(/\s+/g, "");
 
+  // Đã thanh toán / hoàn thành — PHẢI trước nhánh pending (paid không chứa "completed" nhưng là trạng thái cuối)
+  if (
+    s.includes("paid") ||
+    s.includes("completed") ||
+    s.includes("complete") ||
+    s.includes("done") ||
+    s.includes("finished")
+  ) {
+    return "completed";
+  }
+
   // backend có thể trả: pending/created/finding/awaiting...
   if (
     s.includes("finding") ||
@@ -119,6 +132,11 @@ function mapBookingStatusToUi(statusRaw: any): UiOrderStatus {
     s.includes("new")
   ) {
     return "finding";
+  }
+
+  // thợ đã tới địa chỉ (API hay trả Arrived)
+  if (s.includes("arrived") || s.includes("arrive")) {
+    return "in_progress";
   }
 
   // in progress
@@ -132,18 +150,79 @@ function mapBookingStatusToUi(statusRaw: any): UiOrderStatus {
     return "in_progress";
   }
 
-  // completed
-  if (s.includes("completed") || s.includes("complete") || s.includes("done") || s.includes("finished")) {
-    return "completed";
-  }
-
   // cancelled
   if (s.includes("cancel") || s.includes("rejected") || s.includes("reject") || s.includes("failed")) {
     return "cancelled";
   }
 
-  // fallback
+  // fallback — không đoán "đang tìm thợ" cho mọi giá trị lạ
   return "finding";
+}
+
+/** Badge cột Trạng thái — cùng logic ưu tiên như AdminPayments.getStatusBadge, rồi mới tới trạng thái đơn hàng chi tiết */
+function getStatusBadgeFromApi(statusRaw: unknown) {
+  const raw = safeStr(statusRaw, "");
+  const s = raw.toLowerCase();
+
+  if (
+    s.includes("paid") ||
+    s.includes("completed") ||
+    s.includes("complete") ||
+    s.includes("done") ||
+    s.includes("finished")
+  ) {
+    return <Badge className="bg-green-500 text-white hover:bg-green-600">Đã thanh toán</Badge>;
+  }
+  if (s.includes("pending") || s.includes("confirmed")) {
+    return <Badge className="bg-orange-500 text-white hover:bg-orange-600">Đang xử lý</Badge>;
+  }
+  if (
+    s.includes("expired") ||
+    s.includes("fail") ||
+    s.includes("canceled") ||
+    s.includes("cancel") ||
+    s.includes("reject")
+  ) {
+    return <Badge className="bg-red-500 text-white hover:bg-red-600">Không thành công</Badge>;
+  }
+
+  if (s.includes("arrived") || s.includes("arrive")) {
+    return (
+      <Badge className="bg-indigo-500 flex items-center gap-1 text-white hover:bg-indigo-600 dark:bg-indigo-600 dark:hover:bg-indigo-500">
+        <MapPin className="w-3 h-3 shrink-0" />
+        Đã đến nơi
+      </Badge>
+    );
+  }
+
+  if (s.includes("finding") || s.includes("await") || s.includes("created") || s.includes("new")) {
+    return (
+      <Badge className="bg-orange-500 flex items-center gap-1 text-white hover:bg-orange-600">
+        <Loader className="w-3 h-3 animate-spin" />
+        Đang tìm thợ
+      </Badge>
+    );
+  }
+  if (
+    s.includes("inprogress") ||
+    s.includes("progress") ||
+    s.includes("working") ||
+    s.includes("assigned") ||
+    s.includes("accepted")
+  ) {
+    return (
+      <Badge className="bg-blue-500 flex items-center gap-1 text-white hover:bg-blue-600">
+        <Clock className="w-3 h-3" />
+        Đang làm
+      </Badge>
+    );
+  }
+
+  return raw ? (
+    <Badge variant="outline">{raw}</Badge>
+  ) : (
+    <Badge variant="outline">—</Badge>
+  );
 }
 
 function mapUiStatusToApi(statusFilter: string): string | undefined {
@@ -364,11 +443,13 @@ export function AdminOrders() {
         const completedAt = pickCompletedAt(b) ? formatDateTimeVi(pickCompletedAt(b)) : null;
         const estimatedCompletion = pickEstimatedCompletion(b) ? formatDateTimeVi(pickEstimatedCompletion(b)) : null;
 
-        const statusUi = mapBookingStatusToUi(b?.status ?? b?.Status);
+        const apiStatus = safeStr(b?.status ?? b?.Status, "");
+        const statusUi = mapBookingStatusToUi(apiStatus);
 
         return {
           id: shortCodeFromId(bookingId),
           bookingId,
+          apiStatus,
 
           customerId,
           customerName: u ? userName(u) : safeStr(b?.customerName ?? "Không rõ"),
@@ -406,41 +487,6 @@ export function AdminOrders() {
   useEffect(() => {
     load();
   }, [load]);
-
-  const getStatusBadge = (status: UiOrderStatus) => {
-    switch (status) {
-      case "finding":
-        return (
-          <Badge className="bg-orange-500 flex items-center gap-1 text-white">
-            <Loader className="w-3 h-3 animate-spin" />
-            Đang tìm thợ
-          </Badge>
-        );
-      case "in_progress":
-        return (
-          <Badge className="bg-blue-500 flex items-center gap-1 text-white">
-            <Clock className="w-3 h-3" />
-            Đang làm
-          </Badge>
-        );
-      case "completed":
-        return (
-          <Badge className="bg-green-500 flex items-center gap-1 text-white">
-            <CheckCircle className="w-3 h-3" />
-            Hoàn thành
-          </Badge>
-        );
-      case "cancelled":
-        return (
-          <Badge className="bg-red-500 flex items-center gap-1 text-white">
-            <XCircle className="w-3 h-3" />
-            Đã hủy
-          </Badge>
-        );
-      default:
-        return <Badge variant="outline">{status}</Badge>;
-    }
-  };
 
   const filteredOrders = useMemo(() => {
     const term = searchTerm.trim().toLowerCase();
@@ -721,7 +767,7 @@ export function AdminOrders() {
                         </div>
                       </TableCell>
                       <TableCell className="font-medium text-green-600">{formatMoneyVnd(order.amount)}</TableCell>
-                      <TableCell className="text-center">{getStatusBadge(order.status)}</TableCell>
+                      <TableCell className="text-center">{getStatusBadgeFromApi(order.apiStatus)}</TableCell>
                       <TableCell className="text-sm text-gray-600 dark:text-gray-300">{order.createdAt}</TableCell>
                       <TableCell className="pr-4 text-center">
                         <motion.div whileTap={{ scale: 0.96 }}>
@@ -758,7 +804,7 @@ export function AdminOrders() {
               <div className="flex items-center justify-between p-4 bg-gray-50/70 dark:bg-gray-900/30 rounded-xl">
                 <div>
                   <p className="text-sm text-gray-600 dark:text-gray-300 mb-1">Trạng thái hiện tại</p>
-                  {getStatusBadge(selectedOrder.status)}
+                  {getStatusBadgeFromApi(selectedOrder.apiStatus)}
                 </div>
                 <div className="text-right">
                   <p className="text-sm text-gray-600 dark:text-gray-300 mb-1">Giá trị đơn</p>
