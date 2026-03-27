@@ -19,7 +19,7 @@ type ApiWorker = any;
 type ApiJob = any;
 type ApiCategory = any;
 
-type UiOrderStatus = "finding" | "in_progress" | "completed" | "cancelled";
+type UiOrderStatus = "finding" | "arrived" | "in_progress" | "completed" | "cancelled";
 
 type UiOrder = {
   id: string; // hiển thị kiểu #xxxx
@@ -109,10 +109,13 @@ function shortCodeFromId(id: string) {
   return `#${s.slice(0, 5).toUpperCase() || "----"}`;
 }
 
-function mapBookingStatusToUi(statusRaw: any): UiOrderStatus {
+/**
+ * Phân loại 1 booking theo status API — một nguồn sự thật cho thống kê + filter (khớp badge).
+ * Thứ tự nhánh phải trùng ưu tiên với getStatusBadgeFromApi.
+ */
+function classifyBookingStatusBucket(statusRaw: unknown): UiOrderStatus {
   const s = safeStr(statusRaw, "").toLowerCase().replace(/\s+/g, "");
 
-  // Đã thanh toán / hoàn thành — PHẢI trước nhánh pending (paid không chứa "completed" nhưng là trạng thái cuối)
   if (
     s.includes("paid") ||
     s.includes("completed") ||
@@ -123,23 +126,33 @@ function mapBookingStatusToUi(statusRaw: any): UiOrderStatus {
     return "completed";
   }
 
-  // backend có thể trả: pending/created/finding/awaiting...
-  if (
-    s.includes("finding") ||
-    s.includes("pending") ||
-    s.includes("await") ||
-    s.includes("created") ||
-    s.includes("new")
-  ) {
-    return "finding";
-  }
-
-  // thợ đã tới địa chỉ (API hay trả Arrived)
-  if (s.includes("arrived") || s.includes("arrive")) {
+  // Cam “Đang xử lý”
+  if (s.includes("pending") || s.includes("confirmed")) {
     return "in_progress";
   }
 
-  // in progress
+  // Đỏ “Không thành công” — bắt fail/expired/unsuccess… (trước đây expired / failure không vào cancelled)
+  if (
+    s.includes("expired") ||
+    s.includes("fail") ||
+    s.includes("canceled") ||
+    s.includes("cancel") ||
+    s.includes("reject") ||
+    s.includes("rejected") ||
+    s.includes("unsuccess") ||
+    s.includes("voided")
+  ) {
+    return "cancelled";
+  }
+
+  if (s.includes("arrived") || (s.includes("arrive") && !s.includes("unarrive"))) {
+    return "arrived";
+  }
+
+  if (s.includes("finding") || s.includes("await") || s.includes("created") || s.includes("new")) {
+    return "finding";
+  }
+
   if (
     s.includes("inprogress") ||
     s.includes("progress") ||
@@ -150,43 +163,30 @@ function mapBookingStatusToUi(statusRaw: any): UiOrderStatus {
     return "in_progress";
   }
 
-  // cancelled
-  if (s.includes("cancel") || s.includes("rejected") || s.includes("reject") || s.includes("failed")) {
-    return "cancelled";
-  }
-
-  // fallback — không đoán "đang tìm thợ" cho mọi giá trị lạ
   return "finding";
 }
 
-/** Badge cột Trạng thái — cùng logic ưu tiên như AdminPayments.getStatusBadge, rồi mới tới trạng thái đơn hàng chi tiết */
+function mapBookingStatusToUi(statusRaw: any): UiOrderStatus {
+  return classifyBookingStatusBucket(statusRaw);
+}
+
+/** Badge cột Trạng thái — cùng ưu tiên classifyBookingStatusBucket + chi tiết UI */
 function getStatusBadgeFromApi(statusRaw: unknown) {
   const raw = safeStr(statusRaw, "");
   const s = raw.toLowerCase();
+  const bucket = classifyBookingStatusBucket(statusRaw);
 
-  if (
-    s.includes("paid") ||
-    s.includes("completed") ||
-    s.includes("complete") ||
-    s.includes("done") ||
-    s.includes("finished")
-  ) {
+  if (bucket === "completed") {
     return <Badge className="bg-green-500 text-white hover:bg-green-600">Đã thanh toán</Badge>;
   }
   if (s.includes("pending") || s.includes("confirmed")) {
     return <Badge className="bg-orange-500 text-white hover:bg-orange-600">Đang xử lý</Badge>;
   }
-  if (
-    s.includes("expired") ||
-    s.includes("fail") ||
-    s.includes("canceled") ||
-    s.includes("cancel") ||
-    s.includes("reject")
-  ) {
+  if (bucket === "cancelled") {
     return <Badge className="bg-red-500 text-white hover:bg-red-600">Không thành công</Badge>;
   }
 
-  if (s.includes("arrived") || s.includes("arrive")) {
+  if (bucket === "arrived") {
     return (
       <Badge className="bg-indigo-500 flex items-center gap-1 text-white hover:bg-indigo-600 dark:bg-indigo-600 dark:hover:bg-indigo-500">
         <MapPin className="w-3 h-3 shrink-0" />
@@ -199,7 +199,7 @@ function getStatusBadgeFromApi(statusRaw: unknown) {
     return (
       <Badge className="bg-orange-500 flex items-center gap-1 text-white hover:bg-orange-600">
         <Loader className="w-3 h-3 animate-spin" />
-        Đang tìm thợ
+        Chờ thợ nhận
       </Badge>
     );
   }
@@ -218,30 +218,7 @@ function getStatusBadgeFromApi(statusRaw: unknown) {
     );
   }
 
-  return raw ? (
-    <Badge variant="outline">{raw}</Badge>
-  ) : (
-    <Badge variant="outline">—</Badge>
-  );
-}
-
-function mapUiStatusToApi(statusFilter: string): string | undefined {
-  // IMPORTANT: swagger chỉ nói status là string, không nói enum.
-  // Nên mình gửi 1 số giá trị "phổ biến". Nếu backend bạn dùng khác,
-  // bạn chỉ cần đổi các string bên dưới cho khớp.
-  switch (statusFilter) {
-    case "finding":
-      // ví dụ backend hay dùng: Pending / Created
-      return "Pending";
-    case "in_progress":
-      return "InProgress";
-    case "completed":
-      return "Completed";
-    case "cancelled":
-      return "Cancelled";
-    default:
-      return undefined;
-  }
+  return raw ? <Badge variant="outline">{raw}</Badge> : <Badge variant="outline">—</Badge>;
 }
 
 function pickBookingId(b: ApiBooking): string {
@@ -375,19 +352,13 @@ export function AdminOrders() {
         if (id) workerById.set(id, w);
       }
 
-      // 2) load bookings (admin)
-      const apiStatus = mapUiStatusToApi(statusFilter);
-      const bookingsPayload = await adminApi.getAdminBookings(apiStatus ? { status: apiStatus } : undefined);
+      // 2) load bookings (admin) — luôn lấy full list (không filter status server-side)
+      // để 4 thẻ thống kê + bảng khi đổi filter khớp nhau; lọc trạng thái chỉ ở filteredOrders.
+      const bookingsPayload = await adminApi.getAdminBookings();
       const bookings = asArray(bookingsPayload) as ApiBooking[];
 
       // 3) load jobs for bookings (để có service/category/address)
-      const jobIds = Array.from(
-        new Set(
-          bookings
-            .map((b) => pickJobId(b))
-            .filter((x): x is string => Boolean(x)),
-        ),
-      );
+      const jobIds = Array.from(new Set(bookings.map((b) => pickJobId(b)).filter((x): x is string => Boolean(x))));
 
       // giới hạn để tránh quá nhiều request (tuỳ bạn tăng)
       const MAX_JOB_FETCH = 80;
@@ -482,7 +453,7 @@ export function AdminOrders() {
     } finally {
       setLoading(false);
     }
-  }, [statusFilter]);
+  }, []);
 
   useEffect(() => {
     load();
@@ -501,28 +472,28 @@ export function AdminOrders() {
         order.service.toLowerCase().includes(term) ||
         order.category.toLowerCase().includes(term);
 
-      const matchesStatus = statusFilter === "all" || order.status === statusFilter;
+      const matchesStatus =
+        statusFilter === "all" ||
+        order.status === statusFilter ||
+        (statusFilter === "in_progress" && (order.status === "in_progress" || order.status === "finding"));
       return matchesSearch && matchesStatus;
     });
   }, [orders, searchTerm, statusFilter]);
 
   const stats = useMemo(() => {
+    const arrived = orders.filter((o) => o.status === "arrived").length;
+    const inProgressPipeline = orders.filter((o) => o.status === "in_progress" || o.status === "finding").length;
     return {
       total: orders.length,
-      finding: orders.filter((o) => o.status === "finding").length,
-      in_progress: orders.filter((o) => o.status === "in_progress").length,
+      arrived,
+      in_progress: inProgressPipeline,
       completed: orders.filter((o) => o.status === "completed").length,
       cancelled: orders.filter((o) => o.status === "cancelled").length,
     };
   }, [orders]);
 
   return (
-    <motion.div
-      variants={pageVariants}
-      initial="hidden"
-      animate="show"
-      className="space-y-6 animate-slide-up"
-    >
+    <motion.div variants={pageVariants} initial="hidden" animate="show" className="space-y-6 animate-slide-up">
       {/* Header */}
       <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
         <div>
@@ -588,13 +559,13 @@ export function AdminOrders() {
           whileTap={{ scale: 0.99 }}
           transition={{ type: "spring", stiffness: 380, damping: 26 }}
         >
-          <Card className="border-border/60 bg-linear-to-br from-orange-50 to-amber-50 shadow-lg dark:from-orange-950/30 dark:to-amber-950/20">
+          <Card className="border-border/60 bg-linear-to-br from-indigo-50 to-violet-50 shadow-lg dark:from-indigo-950/30 dark:to-violet-950/20">
             <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium text-gray-600 dark:text-gray-200">Đang tìm thợ</CardTitle>
-              <CardDescription className="text-xs">Chưa có thợ nhận</CardDescription>
+              <CardTitle className="text-sm font-medium text-gray-600 dark:text-gray-200">Đã đến nơi</CardTitle>
+              <CardDescription className="text-xs">Thợ đã tới địa chỉ</CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="text-3xl font-semibold text-orange-600">{stats.finding}</div>
+              <div className="text-3xl font-semibold text-indigo-600 dark:text-indigo-400">{stats.arrived}</div>
             </CardContent>
           </Card>
         </motion.div>
@@ -608,7 +579,7 @@ export function AdminOrders() {
           <Card className="border-border/60 bg-linear-to-br from-blue-50 to-cyan-50 shadow-lg dark:from-blue-950/30 dark:to-cyan-950/20">
             <CardHeader className="pb-2">
               <CardTitle className="text-sm font-medium text-gray-600 dark:text-gray-200">Đang làm</CardTitle>
-              <CardDescription className="text-xs">Đang xử lý</CardDescription>
+              <CardDescription className="text-xs">Chờ thợ / đang xử lý / đang làm</CardDescription>
             </CardHeader>
             <CardContent>
               <div className="text-3xl font-semibold text-blue-600">{stats.in_progress}</div>
@@ -674,7 +645,7 @@ export function AdminOrders() {
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="all">Tất cả</SelectItem>
-                    <SelectItem value="finding">Đang tìm thợ</SelectItem>
+                    <SelectItem value="arrived">Đã đến nơi</SelectItem>
                     <SelectItem value="in_progress">Đang làm</SelectItem>
                     <SelectItem value="completed">Hoàn thành</SelectItem>
                     <SelectItem value="cancelled">Đã hủy</SelectItem>
@@ -745,10 +716,7 @@ export function AdminOrders() {
                       <TableCell>
                         <div className="min-w-[170px]">
                           <p className="font-medium">{order.service}</p>
-                          <Badge
-                            variant="outline"
-                            className="mt-1 text-xs bg-background/60 dark:bg-background/20"
-                          >
+                          <Badge variant="outline" className="mt-1 text-xs bg-background/60 dark:bg-background/20">
                             {order.category}
                           </Badge>
                         </div>

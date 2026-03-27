@@ -36,6 +36,9 @@ type BookingLike = {
   title?: string | null;
   categoryId?: number | null;
   categoryName?: string | null;
+  /** Thanh toán — backend có thể dùng tên field khác; pick thêm trong formatPaymentMethodLabel */
+  paymentMethod?: string | null;
+  paymentType?: string | null;
 
   // dates
   scheduledDate?: string | null; // YYYY-MM-DD
@@ -155,6 +158,30 @@ function formatBookingDate(booking: BookingLike) {
   return `${pad2(d.getDate())}/${pad2(d.getMonth() + 1)}/${d.getFullYear()} ${pad2(d.getHours())}:${pad2(d.getMinutes())}`;
 }
 
+/** Nhãn cột Phương thức — ưu tiên API; mặc định Chuyển khoản (nền tảng B2B thường dùng). */
+function formatPaymentMethodLabel(b: BookingLike): string {
+  const o = b as Record<string, unknown>;
+  const raw =
+    [b.paymentMethod, b.paymentType, o.PaymentMethod, o.paymentmethod, o.PaymentType, o.method, o.Method]
+      .find((v) => v != null && String(v).trim() !== "") ?? "";
+  const s = String(raw).trim().toLowerCase().replace(/\s+/g, "");
+  if (!s) return "Chuyển khoản";
+  if (
+    s.includes("transfer") ||
+    s.includes("bank") ||
+    s.includes("chuyen") ||
+    s.includes("chuyển") ||
+    s === "banktransfer"
+  ) {
+    return "Chuyển khoản";
+  }
+  if (s.includes("cash") || s.includes("tienmat") || s.includes("tiềnmặt")) return "Tiền mặt";
+  if (s.includes("momo") || s.includes("zalopay") || s.includes("vnpay") || s.includes("wallet") || s.includes("vi"))
+    return "Ví điện tử";
+  if (s.includes("card") || s.includes("the")) return "Thẻ";
+  return String(raw).trim();
+}
+
 /** Mã giao dịch dạng #XXXXX giống AdminOrders */
 function shortCodeFromId(id: string) {
   const s = (id || "").replace(/-/g, "");
@@ -173,7 +200,7 @@ function categoryNameById(
   const idNum = Number(categoryId);
   if (!Number.isFinite(idNum)) return "";
   const found = categories.find((c) => Number(c?.categoryId ?? c?.id) === idNum);
-  return [found?.name, found?.categoryName, found?.title].find((x) => x != null && x !== "") as string ?? "";
+  return ([found?.name, found?.categoryName, found?.title].find((x) => x != null && x !== "") as string) ?? "";
 }
 
 function AnimatedNumber({
@@ -245,7 +272,7 @@ export function AdminPayments() {
   const userByName = useMemo(() => {
     const map = new Map<string, string>();
     for (const u of usersList) {
-      if (u.userId && (u.fullName != null && u.fullName !== "")) map.set(u.userId, u.fullName);
+      if (u.userId && u.fullName != null && u.fullName !== "") map.set(u.userId, u.fullName);
     }
     return map;
   }, [usersList]);
@@ -253,7 +280,7 @@ export function AdminPayments() {
   const workerByName = useMemo(() => {
     const map = new Map<string, string>();
     for (const w of workersList) {
-      if (w.workerId && (w.fullName != null && w.fullName !== "")) map.set(w.workerId, w.fullName);
+      if (w.workerId && w.fullName != null && w.fullName !== "") map.set(w.workerId, w.fullName);
     }
     return map;
   }, [workersList]);
@@ -316,7 +343,7 @@ export function AdminPayments() {
         };
 
         const paidAllTime = bookingsAll.filter(isPaidRevenueBooking);
-        // Chart + bảng: lấy đơn “đã thanh toán trong khoảng” theo thời điểm thanh toán (updatedAt/...), không theo ngày lịch
+        // Chart + KPI: đơn đã thanh toán trong khoảng lọc (theo thời điểm thanh toán). Bảng lịch sử dùng paidAllTime bên dưới.
         const paidRange = paidAllTime.filter((b) => inRangeByPaymentTime(b, rangeFrom, toMsInclusive));
         const paidThisMonth = paidAllTime.filter((b) => inRangeByPaymentTime(b, monthFrom, toMsInclusive));
 
@@ -327,32 +354,33 @@ export function AdminPayments() {
         setPaidCountInRange(paidRange.length);
         setRevenueInRange(safeRevenueRange);
 
-        // Recent payments: sắp theo thời điểm thanh toán (mới nhất trước)
-        const recent = [...paidRange].sort((a, b) => pickPaymentTime(b) - pickPaymentTime(a)).slice(0, 10);
+        // Bảng lịch sử: toàn bộ đơn đã thanh toán (mọi thời điểm), mới nhất trước — không giới hạn số dòng
+        const recent = [...paidAllTime].sort((a, b) => pickPaymentTime(b) - pickPaymentTime(a));
         setRecentPayments(recent);
 
-        // Lấy categories + jobs để hiển thị tên dịch vụ + category như AdminOrders
-        const jobIds = [
-          ...new Set(
-            paidRange
-              .map((b) => pickJobId(b))
-              .filter((x): x is string => Boolean(x)),
-          ),
-        ];
-        const categoriesPayload = await (categoryApi.getCategories?.({ activeOnly: true }) ??
+        // Jobs enrich cho mọi dòng bảng; gọi API theo lô để tránh quá tải
+        const jobIds = [...new Set(paidAllTime.map((b) => pickJobId(b)).filter((x): x is string => Boolean(x)))];
+        const categoriesPayload = await (
+          categoryApi.getCategories?.({ activeOnly: true }) ??
           categoryApi.getCategories?.() ??
-          Promise.resolve([])).catch(() => []);
-        const MAX_JOB_FETCH = 60;
-        const jobsFetched = await Promise.all(
-          jobIds.slice(0, MAX_JOB_FETCH).map(async (jobId) => {
-            try {
-              const job = await jobApi.getJob(jobId);
-              return { jobId, job: job as Record<string, unknown> };
-            } catch {
-              return { jobId, job: null };
-            }
-          }),
-        );
+          Promise.resolve([])
+        ).catch(() => []);
+        const JOB_FETCH_BATCH = 12;
+        const jobsFetched: { jobId: string; job: Record<string, unknown> | null }[] = [];
+        for (let i = 0; i < jobIds.length; i += JOB_FETCH_BATCH) {
+          const batch = jobIds.slice(i, i + JOB_FETCH_BATCH);
+          const chunk = await Promise.all(
+            batch.map(async (jobId) => {
+              try {
+                const job = await jobApi.getJob(jobId);
+                return { jobId, job: job as Record<string, unknown> };
+              } catch {
+                return { jobId, job: null };
+              }
+            }),
+          );
+          jobsFetched.push(...chunk);
+        }
         setCategoriesList(Array.isArray(categoriesPayload) ? categoriesPayload : []);
         setJobsList(jobsFetched);
 
@@ -432,10 +460,7 @@ export function AdminPayments() {
     return Math.round(revenueInRange / paidCountInRange);
   }, [paidCountInRange, revenueInRange]);
 
-  const commissionInRange = useMemo(
-    () => Math.round(revenueInRange * PLATFORM_FEE_RATE),
-    [revenueInRange],
-  );
+  const commissionInRange = useMemo(() => Math.round(revenueInRange * PLATFORM_FEE_RATE), [revenueInRange]);
 
   const trendPct = useMemo(() => {
     if (!revenueData.length) return 0;
@@ -553,9 +578,7 @@ export function AdminPayments() {
                 >
                   <TrendingUp className="w-7 h-7 text-white" />
                 </motion.div>
-                <Badge className="bg-blue-500">
-                  {loading ? "..." : `${Math.round(PLATFORM_FEE_RATE * 100)}%`}
-                </Badge>
+                <Badge className="bg-blue-500">{loading ? "..." : `${Math.round(PLATFORM_FEE_RATE * 100)}%`}</Badge>
               </div>
               <p className="text-gray-600 text-sm mb-1">Hoa hồng nền tảng</p>
               <p className="text-3xl text-blue-600">
@@ -728,111 +751,114 @@ export function AdminPayments() {
         <Card className="border-0 shadow-lg">
           <CardHeader>
             <CardTitle>Lịch sử giao dịch</CardTitle>
-            <CardDescription>Tất cả giao dịch thanh toán</CardDescription>
           </CardHeader>
 
           <CardContent className="p-0">
-            <Table>
-              <TableHeader>
-                <TableRow className="bg-gray-50">
-                  <TableHead>Mã GD</TableHead>
-                  <TableHead>Đơn hàng</TableHead>
-                  <TableHead>Khách hàng</TableHead>
-                  <TableHead>Thợ</TableHead>
-                  <TableHead>Số tiền</TableHead>
-                  <TableHead>Hoa hồng</TableHead>
-                  <TableHead>Phương thức</TableHead>
-                  <TableHead className="text-center">Trạng thái</TableHead>
-                  <TableHead>Thời gian</TableHead>
-                </TableRow>
-              </TableHeader>
-
-              <TableBody>
-                {loading ? (
-                  Array.from({ length: 6 }).map((_, idx) => (
-                    <TableRow key={idx} className="hover:bg-blue-50 transition-colors">
-                      <TableCell>
-                        <span className="inline-block w-[80px] h-4 bg-gray-200/50 dark:bg-gray-800/50 animate-pulse rounded-md" />
-                      </TableCell>
-                      <TableCell>
-                        <span className="inline-block w-[100px] h-4 bg-gray-200/50 dark:bg-gray-800/50 animate-pulse rounded-md" />
-                      </TableCell>
-                      <TableCell>
-                        <span className="inline-block w-[120px] h-4 bg-gray-200/50 dark:bg-gray-800/50 animate-pulse rounded-md" />
-                      </TableCell>
-                      <TableCell>
-                        <span className="inline-block w-[90px] h-4 bg-gray-200/50 dark:bg-gray-800/50 animate-pulse rounded-md" />
-                      </TableCell>
-                      <TableCell>
-                        <span className="inline-block w-[110px] h-4 bg-gray-200/50 dark:bg-gray-800/50 animate-pulse rounded-md" />
-                      </TableCell>
-                      <TableCell>
-                        <span className="inline-block w-[110px] h-4 bg-gray-200/50 dark:bg-gray-800/50 animate-pulse rounded-md" />
-                      </TableCell>
-                      <TableCell>
-                        <span className="inline-block w-[70px] h-4 bg-gray-200/50 dark:bg-gray-800/50 animate-pulse rounded-md" />
-                      </TableCell>
-                      <TableCell className="text-center">
-                        <span className="inline-block w-[80px] h-4 bg-gray-200/50 dark:bg-gray-800/50 animate-pulse rounded-md" />
-                      </TableCell>
-                      <TableCell>
-                        <span className="inline-block w-[120px] h-4 bg-gray-200/50 dark:bg-gray-800/50 animate-pulse rounded-md" />
-                      </TableCell>
-                    </TableRow>
-                  ))
-                ) : recentPayments.length === 0 ? (
-                  <TableRow>
-                    <TableCell colSpan={9} className="text-center text-muted-foreground py-6">
-                      Không có giao dịch đã thanh toán trong khoảng này.
-                    </TableCell>
+            <div className="max-h-[min(70vh,56rem)] overflow-auto rounded-b-xl">
+              <Table>
+                <TableHeader className="sticky top-0 z-10 shadow-sm [&_tr]:border-b">
+                  <TableRow className="bg-gray-50 dark:bg-gray-900/95 backdrop-blur-sm">
+                    <TableHead>Mã GD</TableHead>
+                    <TableHead>Đơn hàng</TableHead>
+                    <TableHead>Khách hàng</TableHead>
+                    <TableHead>Thợ</TableHead>
+                    <TableHead>Số tiền</TableHead>
+                    <TableHead>Hoa hồng</TableHead>
+                    <TableHead>Phương thức</TableHead>
+                    <TableHead className="text-center">Trạng thái</TableHead>
+                    <TableHead>Thời gian</TableHead>
                   </TableRow>
-                ) : (
-                  recentPayments.map((b, idx) => {
-                    const amount = getBookingAmount(b);
-                    const commission = Math.round(amount * PLATFORM_FEE_RATE);
-                    const jobId = pickJobId(b);
-                    const job = jobId ? jobById.get(jobId) : undefined;
-                    const serviceName =
-                      (job?.title as string) ?? (b.title as string) ?? b.jobId ?? b.bidId ?? "Dịch vụ";
-                    const categoryName =
-                      categoryNameById(categoriesList, job?.categoryId ?? b.categoryId) ||
-                      (b.categoryName as string) ||
-                      "N/A";
-                    return (
-                      <motion.tr
-                        key={b.bookingId ?? `${b.jobId ?? "job"}-${idx}`}
-                        initial={{ opacity: 0, y: 10 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ duration: 0.35, delay: idx * 0.04 }}
-                        className="hover:bg-blue-50 transition-colors"
-                      >
-                        <TableCell className="font-medium text-[#007BFF]">
-                          {b.bookingId ? shortCodeFromId(b.bookingId) : "—"}
+                </TableHeader>
+
+                <TableBody>
+                  {loading ? (
+                    Array.from({ length: 6 }).map((_, idx) => (
+                      <TableRow key={idx} className="hover:bg-blue-50 transition-colors">
+                        <TableCell>
+                          <span className="inline-block w-[80px] h-4 bg-gray-200/50 dark:bg-gray-800/50 animate-pulse rounded-md" />
                         </TableCell>
                         <TableCell>
-                          <div className="min-w-[160px]">
-                            <p className="font-medium">{serviceName}</p>
-                            <Badge
-                              variant="outline"
-                              className="mt-1 text-xs bg-background/60 dark:bg-background/20"
-                            >
-                              {categoryName}
-                            </Badge>
-                          </div>
+                          <span className="inline-block w-[100px] h-4 bg-gray-200/50 dark:bg-gray-800/50 animate-pulse rounded-md" />
                         </TableCell>
-                        <TableCell>{b.customerId ? (userByName.get(b.customerId) ?? b.customerId) : "—"}</TableCell>
-                        <TableCell>{b.workerId ? (workerByName.get(b.workerId) ?? b.workerId) : "—"}</TableCell>
-                        <TableCell className="font-medium text-green-600">{formatVnd(amount)}</TableCell>
-                        <TableCell className="font-medium text-blue-600">{formatVnd(commission)}</TableCell>
-                        <TableCell>—</TableCell>
-                        <TableCell className="text-center">{getTableStatus(b)}</TableCell>
-                        <TableCell className="text-sm text-gray-600">{formatBookingDate(b)}</TableCell>
-                      </motion.tr>
-                    );
-                  })
-                )}
-              </TableBody>
-            </Table>
+                        <TableCell>
+                          <span className="inline-block w-[120px] h-4 bg-gray-200/50 dark:bg-gray-800/50 animate-pulse rounded-md" />
+                        </TableCell>
+                        <TableCell>
+                          <span className="inline-block w-[90px] h-4 bg-gray-200/50 dark:bg-gray-800/50 animate-pulse rounded-md" />
+                        </TableCell>
+                        <TableCell>
+                          <span className="inline-block w-[110px] h-4 bg-gray-200/50 dark:bg-gray-800/50 animate-pulse rounded-md" />
+                        </TableCell>
+                        <TableCell>
+                          <span className="inline-block w-[110px] h-4 bg-gray-200/50 dark:bg-gray-800/50 animate-pulse rounded-md" />
+                        </TableCell>
+                        <TableCell>
+                          <span className="inline-block w-[70px] h-4 bg-gray-200/50 dark:bg-gray-800/50 animate-pulse rounded-md" />
+                        </TableCell>
+                        <TableCell className="text-center">
+                          <span className="inline-block w-[80px] h-4 bg-gray-200/50 dark:bg-gray-800/50 animate-pulse rounded-md" />
+                        </TableCell>
+                        <TableCell>
+                          <span className="inline-block w-[120px] h-4 bg-gray-200/50 dark:bg-gray-800/50 animate-pulse rounded-md" />
+                        </TableCell>
+                      </TableRow>
+                    ))
+                  ) : recentPayments.length === 0 ? (
+                    <TableRow>
+                      <TableCell colSpan={9} className="text-center text-muted-foreground py-6">
+                        Chưa có giao dịch đã thanh toán.
+                      </TableCell>
+                    </TableRow>
+                  ) : (
+                    recentPayments.map((b, idx) => {
+                      const amount = getBookingAmount(b);
+                      const commission = Math.round(amount * PLATFORM_FEE_RATE);
+                      const jobId = pickJobId(b);
+                      const job = jobId ? jobById.get(jobId) : undefined;
+                      const serviceName =
+                        (job?.title as string) ?? (b.title as string) ?? b.jobId ?? b.bidId ?? "Dịch vụ";
+                      const categoryName =
+                        categoryNameById(categoriesList, job?.categoryId ?? b.categoryId) ||
+                        (b.categoryName as string) ||
+                        "N/A";
+                      return (
+                        <motion.tr
+                          key={b.bookingId ?? `${b.jobId ?? "job"}-${idx}`}
+                          initial={{ opacity: 0, y: 10 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          transition={{
+                            duration: 0.25,
+                            delay: Math.min(idx * 0.02, 0.35),
+                          }}
+                          className="hover:bg-blue-50 transition-colors"
+                        >
+                          <TableCell className="font-medium text-[#007BFF]">
+                            {b.bookingId ? shortCodeFromId(b.bookingId) : "—"}
+                          </TableCell>
+                          <TableCell>
+                            <div className="min-w-[160px]">
+                              <p className="font-medium">{serviceName}</p>
+                              <Badge variant="outline" className="mt-1 text-xs bg-background/60 dark:bg-background/20">
+                                {categoryName}
+                              </Badge>
+                            </div>
+                          </TableCell>
+                          <TableCell>{b.customerId ? (userByName.get(b.customerId) ?? b.customerId) : "—"}</TableCell>
+                          <TableCell>{b.workerId ? (workerByName.get(b.workerId) ?? b.workerId) : "—"}</TableCell>
+                          <TableCell className="font-medium text-green-600">{formatVnd(amount)}</TableCell>
+                          <TableCell className="font-medium text-blue-600">{formatVnd(commission)}</TableCell>
+                          <TableCell className="text-sm text-gray-700 dark:text-gray-300">
+                            {formatPaymentMethodLabel(b)}
+                          </TableCell>
+                          <TableCell className="text-center">{getTableStatus(b)}</TableCell>
+                          <TableCell className="text-sm text-gray-600">{formatBookingDate(b)}</TableCell>
+                        </motion.tr>
+                      );
+                    })
+                  )}
+                </TableBody>
+              </Table>
+            </div>
           </CardContent>
         </Card>
       </motion.div>
