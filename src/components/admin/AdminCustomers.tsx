@@ -17,7 +17,7 @@ import {
 
 import { Badge } from "../ui/badge";
 import { Button } from "../ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "../ui/card";
 import { Dialog, DialogContent, DialogDescription as DialogDesc, DialogHeader, DialogTitle } from "../ui/dialog";
 import {
   DropdownMenu,
@@ -77,9 +77,9 @@ function formatDate(date: string) {
 function roleMeta(roleId: number) {
   switch (roleId) {
     case 1:
-      return { label: "Khách hàng", badgeClass: "bg-blue-500", icon: Wrench };
+      return { label: "Khách hàng", badgeClass: "bg-blue-500", icon: Users };
     case 2:
-      return { label: "Thợ", badgeClass: "bg-purple-500", icon: Users };
+      return { label: "Thợ", badgeClass: "bg-purple-500", icon: Wrench };
     case 3:
       return { label: "Admin", badgeClass: "bg-orange-500", icon: Shield };
     default:
@@ -180,7 +180,8 @@ export function AdminCustomers() {
     const total = customers.length;
     const active = customers.filter((c) => c.isActive).length;
     const vip = customers.filter((c) => c.totalSpent >= 5_000_000).length;
-    const workers = customers.filter((c) => c.roleId === 1).length;
+    // Cùng nguồn với cột “Vai trò”: Identity roleId = 2 (Thợ). Dispatch /api/dispatch/workers có thể ít hơn nếu chưa tạo hồ sơ thợ.
+    const workers = customers.filter((c) => c.roleId === 2).length;
     return { total, active, vip, workers };
   }, [customers]);
 
@@ -270,8 +271,8 @@ export function AdminCustomers() {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">Tất cả vai trò</SelectItem>
-                  <SelectItem value="1">Thợ</SelectItem>
-                  <SelectItem value="2">Khách hàng</SelectItem>
+                  <SelectItem value="1">Khách hàng</SelectItem>
+                  <SelectItem value="2">Thợ</SelectItem>
                   <SelectItem value="3">Admin</SelectItem>
                 </SelectContent>
               </Select>
